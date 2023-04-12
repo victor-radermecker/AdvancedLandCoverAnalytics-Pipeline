@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 
 class Fishnet:
-    def __init__(self, shapefile_path, tile_size_miles, overlay_method):
+    def __init__(self, shapefile_path, tile_size_miles, overlay_method, clip=True):
         """
         Initializes a Fishnet object with the given shapefile path and tile size.
 
@@ -21,6 +21,7 @@ class Fishnet:
         self.shapefile_path = shapefile_path
         self.tile_size_miles = tile_size_miles
         self.overlay_method = overlay_method
+        self.clip = clip
 
     def create_fishnet(self):
         # Load the shapefile
@@ -64,9 +65,10 @@ class Fishnet:
             crs=self.tx.crs,
         )
 
-        # Clip the fishnet to the Texas boundary
-        print("Cliping fishinet to boundaries...")
-        self.fishnet = gpd.overlay(self.fishnet, self.tx, how=self.overlay_method)
+        if self.clip:
+            # Clip the fishnet to the Texas boundary
+            print("Cliping fishinet to boundaries...")
+            self.fishnet = gpd.overlay(self.fishnet, self.tx, how=self.overlay_method)
 
         print("Success. Fishnet created.")
 
@@ -97,3 +99,19 @@ class Fishnet:
         self.tx.plot(ax=ax, color="white", edgecolor="black")
         self.fishnet.plot(ax=ax, color="none", edgecolor="red")
         plt.show()
+
+    def filter_fishnet_by_bbox(self, bbox):
+        """
+        Filter the fishnet to keep only the bounding boxes present within the larger bounding box.
+
+        Parameters:
+        bbox (tuple): A tuple of (xmin, ymin, xmax, ymax) representing the larger bounding box.
+
+        Returns:
+        GeoDataFrame: A filtered GeoDataFrame containing only the bounding boxes within the larger bounding box.
+        """
+        xmin, ymin, xmax, ymax = bbox
+        bounding_box = Polygon([(xmin, ymin), (xmax, ymin), (xmax, ymax), (xmin, ymax)])
+        filtered_fishnet = self.fishnet[self.fishnet.intersects(bounding_box)]
+
+        return filtered_fishnet
