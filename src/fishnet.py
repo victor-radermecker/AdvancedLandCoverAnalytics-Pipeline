@@ -6,19 +6,21 @@ import matplotlib.pyplot as plt
 
 
 class Fishnet:
-    def __init__(self, shapefile_path, tile_size_miles):
+    def __init__(self, shapefile_path, tile_size_miles, overlay_method):
         """
         Initializes a Fishnet object with the given shapefile path and tile size.
 
         Parameters:
         shapefile_path (str): The file path to the shapefile to use as the base geometry for the fishnet.
         tile_size_miles (float): The size of each tile in miles.
+        overlay_method (str): The overlay method to use when clipping the fishnet to the shapefile. (Intersection or Union)
 
         Returns:
         Fishnet: A Fishnet object with the given shapefile path and tile size.
         """
         self.shapefile_path = shapefile_path
         self.tile_size_miles = tile_size_miles
+        self.overlay_method = overlay_method
 
     def create_fishnet(self):
         # Load the shapefile
@@ -57,14 +59,14 @@ class Fishnet:
 
         # Create a GeoDataFrame from the fishnet polygons
         print("Generating polygons...")
-        fishnet = gpd.GeoDataFrame(
+        self.fishnet = gpd.GeoDataFrame(
             {"id": range(len(fishnet_polys)), "geometry": fishnet_polys},
             crs=self.tx.crs,
         )
 
         # Clip the fishnet to the Texas boundary
         print("Cliping fishinet to boundaries...")
-        self.fishnet = gpd.overlay(fishnet, self.tx, how="intersection")
+        self.fishnet = gpd.overlay(self.fishnet, self.tx, how=self.overlay_method)
 
         print("Success. Fishnet created.")
 
