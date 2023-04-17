@@ -4,7 +4,10 @@ from pyproj import Geod
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import pickle
+import pandas as pd
+import math
 from shapely.geometry import MultiPolygon
+from shapely.geometry import box
 
 
 class Fishnet:
@@ -25,40 +28,37 @@ class Fishnet:
         self.overlay_method = overlay_method
         self.clip = clip
 
+    # -------------------------------------------------------------------------- #
+    #                         Generate fishnet                                   #
+    # -------------------------------------------------------------------------- #
+
     def create_fishnet(self):
         # Load the shapefile
         self.tx = gpd.read_file(self.shapefile_path)
 
         # Convert tile size from miles to degrees
-        tile_size = self.miles_to_degrees(self.tile_size_miles, self.tx.centroid.y)
+        self.tile_size_degrees = self.miles_to_degrees(
+            self.tile_size_miles, self.tx.centroid.y
+        )
 
         # Calculate the number of rows and columns in the fishnet
-        xmin, ymin, xmax, ymax = self.tx.total_bounds
-        x_size = xmax - xmin
-        y_size = ymax - ymin
-        self.num_cols = round(x_size / tile_size)
-        self.num_rows = round(y_size / tile_size)
+        self.xmin, self.ymin, self.xmax, self.ymax = self.tx.total_bounds
+        self.x_size = self.xmax - self.xmin
+        self.y_size = self.ymax - self.ymin
+        self.num_cols = math.ceil(self.x_size / self.tile_size_degrees)
+        self.num_rows = math.ceil(self.y_size / self.tile_size_degrees)
 
         # Create the fishnet polygons
         fishnet_polys = []
         for i in tqdm(range(self.num_rows)):
             for j in range(self.num_cols):
                 # Calculate the coordinates of the fishnet cell corners
-                x_left = xmin + j * tile_size
-                x_right = xmin + (j + 1) * tile_size
-                y_bottom = ymin + i * tile_size
-                y_top = ymin + (i + 1) * tile_size
-
-                # Create a polygon for the fishnet cell
-                poly = Polygon(
-                    [
-                        (x_left, y_bottom),
-                        (x_right, y_bottom),
-                        (x_right, y_top),
-                        (x_left, y_top),
-                    ]
-                )
-                fishnet_polys.append(poly)
+                x_min = self.xmin + j * self.tile_size_degrees
+                x_max = x_min + self.tile_size_degrees
+                y_max = self.ymax - i * self.tile_size_degrees
+                y_min = y_max - self.tile_size_degrees
+                tile_geom = box(x_min, y_min, x_max, y_max)
+                fishnet_polys.append(tile_geom)
 
         # Create a GeoDataFrame from the fishnet polygons
         print("Generating polygons...")
@@ -76,32 +76,6 @@ class Fishnet:
 
         return self.fishnet
 
-    def miles_to_degrees(self, miles, latitude):
-        """
-        Convert a distance in miles to decimal degrees at a specific latitude.
-
-        This function uses the pyproj.Geod class to perform more accurate distance
-        calculations using a geodetic coordinate system (WGS84).
-
-        Parameters:
-        miles (float): The distance in miles to be converted.
-        latitude (float): The latitude at which the conversion is to be performed.
-
-        Returns:
-        float: The distance in decimal degrees corresponding to the input distance in miles.
-        """
-        geod = Geod(ellps="WGS84")
-        meters = miles * 1609.34
-        new_longitude, _, _ = geod.fwd(0, latitude, 90, meters)
-        return abs(new_longitude)
-
-    def plot_fishnet(self):
-        # plot the fishnet
-        fig, ax = plt.subplots(figsize=(10, 10))
-        self.tx.plot(ax=ax, color="white", edgecolor="black")
-        self.fishnet.plot(ax=ax, color="none", edgecolor="red")
-        plt.show()
-
     def filter_fishnet_by_bbox(self, bbox):
         """
         Filter the fishnet to keep only the bounding boxes present within the larger bounding box.
@@ -114,9 +88,81 @@ class Fishnet:
         """
         xmin, ymin, xmax, ymax = bbox
         bounding_box = Polygon([(xmin, ymin), (xmax, ymin), (xmax, ymax), (xmin, ymax)])
-        filtered_fishnet = self.fishnet[self.fishnet.intersects(bounding_box)]
+        self.filtered_fishnet = self.fishnet[self.fishnet.intersects(bounding_box)]
+        self.filtered_batches = self.batches[self.batches.intersects(bounding_box)]
 
-        return filtered_fishnet
+    # -------------------------------------------------------------------------- #
+    #                              Batches                                       #
+    # -------------------------------------------------------------------------- #
+
+    def batch(self, batch_tile_size):
+        """
+        Divide the fishnet into batch tiles of the specified size in miles, assign each fishnet tile to its corresponding
+        batch tile, and return the batched fishnet as a GeoDataFrame.
+
+        Parameters:
+        batch_tile_size (float): The size of each batch tile in miles.
+
+        Returns:
+        GeoDataFrame: A GeoDataFrame with the same geometry as the fishnet, but with an additional column indicating the
+        batch tile ID of each fishnet tile.
+        """
+        # Check that batch tile size is a multiple of tile size
+        if batch_tile_size % self.tile_size_miles != 0:
+            raise ValueError("Batch tile size must be a multiple of tile size.")
+        else:
+            self.batch_tile_size = batch_tile_size
+
+        # Convert batch tile size from miles to degrees
+        self.batch_tile_size_degrees = self.miles_to_degrees(
+            self.batch_tile_size, self.tx.centroid.y
+        )
+
+        # Calculate the number of rows and columns in the batched fishnet
+        self.batch_cols = math.ceil(self.x_size / self.batch_tile_size_degrees)
+        self.batch_rows = math.ceil(self.y_size / self.batch_tile_size_degrees)
+
+        # Create a dictionary to store the batch tile ID of each fishnet tile
+        batch_dict = []
+
+        # Iterate over the fishnet tiles and assign each one to its corresponding batch tile
+        for i, row in tqdm(self.fishnet.iterrows(), total=self.fishnet.shape[0]):
+            col_idx = i % self.num_cols
+            row_idx = i // self.num_cols
+            batch_col_idx = col_idx // (
+                self.batch_tile_size_degrees / self.tile_size_degrees
+            )
+            batch_row_idx = row_idx // (
+                self.batch_tile_size_degrees / self.tile_size_degrees
+            )
+            batch_id = int(batch_row_idx * self.batch_cols + batch_col_idx)
+            batch_dict.append(batch_id)
+
+        # Create a new GeoDataFrame with the batch IDs
+        self.fishnet["batch_id"] = pd.Series(batch_dict)
+
+        # Create a new GeoDataFrame with the batch geometries
+        batch_geoms = []
+        for i in tqdm(range(self.batch_rows)):
+            for j in range(self.batch_cols):
+                x_min = self.xmin + j * self.batch_tile_size_degrees
+                x_max = x_min + self.batch_tile_size_degrees
+                y_max = self.ymax - i * self.batch_tile_size_degrees
+                y_min = y_max - self.batch_tile_size_degrees
+                batch_geom = box(x_min, y_min, x_max, y_max)
+                batch_geoms.append(batch_geom)
+        batches = gpd.GeoDataFrame(
+            {
+                "batch_id": range(self.batch_rows * self.batch_cols),
+                "geometry": batch_geoms,
+            },
+            crs=self.fishnet.crs,
+        )
+        self.batches = batches
+
+    # -------------------------------------------------------------------------- #
+    #                               Utils                                       #
+    # -------------------------------------------------------------------------- #
 
     def save(self, file_path):
         """
@@ -142,52 +188,55 @@ class Fishnet:
         with open(file_path, "rb") as file:
             return pickle.load(file)
 
-    def batch(self, ncols, nrows):
+    def plot_fishnet(self):
+        fig, ax = plt.subplots(figsize=(10, 10))
+        self.tx.plot(ax=ax, color="white", edgecolor="black")
+        # Plot the fishnet tiles
+        self.fishnet.plot(ax=ax, color="none", edgecolor="red")
+        # Plot the batch tiles
+        self.batches.plot(ax=ax, color="none", edgecolor="darkgreen", linewidth=3)
+        plt.show()
+
+    def plot_filtered_fishnet(self, zoom=False):
+        # check if self.filtered_fishnet exists
+        if not hasattr(self, "filtered_fishnet"):
+            print(
+                "No filtered fishnet found. Please run filter_fishnet_by_bbox() first."
+            )
+        fig, ax = plt.subplots(figsize=(10, 10))
+        self.tx.plot(ax=ax, color="white", edgecolor="black")
+        # Plot the fishnet tiles
+        self.filtered_fishnet.plot(ax=ax, color="none", edgecolor="red")
+        # Plot the batch tiles
+        self.filtered_batches.plot(
+            ax=ax, color="none", edgecolor="darkgreen", linewidth=3
+        )
+        if zoom:
+            ax.set_xlim(
+                self.filtered_batches.total_bounds[0],
+                self.filtered_batches.total_bounds[2],
+            )
+            ax.set_ylim(
+                self.filtered_batches.total_bounds[1],
+                self.filtered_batches.total_bounds[3],
+            )
+        plt.show()
+
+    def miles_to_degrees(self, miles, latitude):
         """
-        Group the fishnet tiles into rectangular batches of the same size.
+        Convert a distance in miles to decimal degrees at a specific latitude.
+
+        This function uses the pyproj.Geod class to perform more accurate distance
+        calculations using a geodetic coordinate system (WGS84).
 
         Parameters:
-        ncols (int): The number of columns in each batch.
-        nrows (int): The number of rows in each batch.
+        miles (float): The distance in miles to be converted.
+        latitude (float): The latitude at which the conversion is to be performed.
 
         Returns:
-        GeoDataFrame: A new GeoDataFrame with a less granular fishnet containing all the previous smaller tiles.
+        float: The distance in decimal degrees corresponding to the input distance in miles.
         """
-        # Calculate the number of original fishnet rows and columns
-        xmin, ymin, xmax, ymax = self.fishnet.total_bounds
-        x_size = xmax - xmin
-        y_size = ymax - ymin
-
-        # Check if ncols and nrows are valid factors of the original fishnet's dimensions
-        if self.num_cols % ncols != 0 or self.num_rows % nrows != 0:
-            raise ValueError(
-                "The provided ncols and nrows are not valid factors for the original fishnet's dimensions."
-            )
-
-        # Calculate the number of batch rows and columns
-        num_batch_cols = self.num_cols // ncols
-        num_batch_rows = self.num_rows // nrows
-
-        # Initialize a list of empty MultiPolygons for each batch cell
-        batch_polys = [MultiPolygon() for _ in range(num_batch_rows * num_batch_cols)]
-
-        # Iterate through the smaller tiles in the fishnet
-        for tile in tqdm(self.fishnet.itertuples()):
-            # Calculate the batch cell indices corresponding to the current tile
-            tile_xmin, tile_ymin, tile_xmax, tile_ymax = tile.geometry.bounds
-            col_idx = int((tile_xmin - xmin) // (self.tile_size_miles * ncols))
-            row_idx = int((tile_ymin - ymin) // (self.tile_size_miles * nrows))
-
-            # Calculate the batch cell index in the batch_polys list
-            batch_idx = row_idx * num_batch_cols + col_idx
-
-            # Update the MultiPolygon for the corresponding batch cell with the current tile
-            batch_polys[batch_idx] = batch_polys[batch_idx].union(tile.geometry)
-
-        # Create a GeoDataFrame from the batch polygons
-        batch_gdf = gpd.GeoDataFrame(
-            {"id": range(len(batch_polys)), "geometry": batch_polys},
-            crs=self.fishnet.crs,
-        )
-
-        return batch_gdf
+        geod = Geod(ellps="WGS84")
+        meters = miles * 1609.34
+        new_longitude, _, _ = geod.fwd(0, latitude, 90, meters)
+        return abs(new_longitude)
