@@ -33,7 +33,7 @@ class ImageProcessor:
 
             built_label = self.extract_label(
                 image, (255, 255, 255)
-            )  # Assuming "built" is represented by white pixels
+            )  # Assuming "built" is represented by white pixels red #  [196  40  27] for red in DW
             pixel_coordinates = self.get_pixel_coordinates(self.fishnet)
 
             self.fishnet["ImageCoordinates"] = pixel_coordinates
