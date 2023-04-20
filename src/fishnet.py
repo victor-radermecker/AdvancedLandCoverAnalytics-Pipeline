@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import pickle
 import pandas as pd
 import math
-from shapely.geometry import MultiPolygon
 from shapely.geometry import box
 
 
