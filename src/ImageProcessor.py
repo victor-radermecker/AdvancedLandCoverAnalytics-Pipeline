@@ -7,26 +7,37 @@ from shapely.geometry import box
 from PIL import Image
 import numpy as np
 from tqdm import tqdm
+import matplotlib.pyplot as plt
+import imageio
+
+tqdm.pandas()
 
 
 class ImageProcessor:
-    def __init__(self, fishnet, image_folder: str, file_name):
+    def __init__(self, fishnet, image_folder: str, file_name, filtered=False):
+        self.filtered = filtered
         self.fh = fishnet
-        self.fishnet = self.fh.fishnet
         self.image_folder = image_folder
-        self.batch_ids = self.fh.batches.index
         self.file_name = file_name
 
+        if self.filtered:
+            self.fishnet = self.fh.filtered_fishnet
+            self.batch_ids = self.fh.filtered_batches.index
+            self.min_batch_id = self.fh.filtered_batches.index.min()
+        else:
+            self.fishnet = self.fh.fishnet
+            self.batch_ids = self.fh.batches.index
+
     def process_images(self):
-        mean_built_list = []
         self.fishnet["ImageCoordinates"] = np.nan
         self.fishnet["MeanPixel"] = np.nan
 
-        for batch_id in range(3):  # self.batch_ids:
+        for batch_id in tqdm(list(self.batch_ids), desc="Processing Images:"):
             image_path = os.path.join(
-                self.image_folder, f"{self.file_name}_{batch_id}.tif"
+                self.image_folder, f"{self.file_name}_{batch_id-self.min_batch_id}.tif"
             )
-            image = cv2.imread(image_path)
+            print(image_path)
+            image = imageio.imread(image_path)
 
             # Extract image dimensions
             self.img_height, self.img_width, _ = image.shape
@@ -54,7 +65,7 @@ class ImageProcessor:
 
     def get_pixel_coordinates(self, df):
         # Use the apply() method with axis=1 to apply the latlong_to_pixel function to each row
-        image_coordinates = df.progress_apply(
+        image_coordinates = df.apply(
             lambda row: self.latlong_to_pixel(
                 self.batch_geometry, row["geometry"].bounds
             ),
@@ -80,7 +91,7 @@ class ImageProcessor:
 
     def get_mean_pixel_value(self, matrix, df):
         # Use the apply() method with axis=1 to apply the latlong_to_pixel function to each row
-        mean_pixel = df.progress_apply(
+        mean_pixel = df.apply(
             lambda row: self.mean_pixel_value(matrix, row["ImageCoordinates"]),
             axis=1,
         )
@@ -108,3 +119,12 @@ class ImageProcessor:
             255,
         ]  # Extracted image is black & white
         return extracted_image
+
+    def get_unique_colors(self, image):
+        # Reshape the image array into a 2D array of shape (num_pixels, 3)
+        reshaped_image = image.reshape(-1, image.shape[-1])
+
+        # Find unique color triples using numpy
+        unique_colors = np.unique(reshaped_image, axis=0)
+
+        return unique_colors
