@@ -137,9 +137,6 @@ class Fishnet:
             batch_id = int(batch_row_idx * self.batch_cols + batch_col_idx)
             batch_dict.append(batch_id)
 
-        # Create a new GeoDataFrame with the batch IDs
-        self.fishnet["batch_id"] = pd.Series(batch_dict)
-
         # Create a new GeoDataFrame with the batch geometries
         batch_geoms = []
         for i in tqdm(range(self.batch_rows)):
@@ -150,14 +147,17 @@ class Fishnet:
                 y_min = y_max - self.batch_tile_size_degrees
                 batch_geom = box(x_min, y_min, x_max, y_max)
                 batch_geoms.append(batch_geom)
-        batches = gpd.GeoDataFrame(
+
+        self.batches = gpd.GeoDataFrame(
             {
                 "batch_id": range(self.batch_rows * self.batch_cols),
                 "geometry": batch_geoms,
             },
             crs=self.fishnet.crs,
         )
-        self.batches = batches
+
+        # Create a new GeoDataFrame with the batch IDs
+        self.fishnet["batch_id"] = pd.Series(batch_dict)
 
     # -------------------------------------------------------------------------- #
     #                               Utils                                       #
