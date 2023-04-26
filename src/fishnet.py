@@ -36,26 +36,33 @@ class Fishnet:
         self.tx = gpd.read_file(self.shapefile_path)
 
         # Convert tile size from miles to degrees
-        self.tile_size_degrees = self.miles_to_degrees(
-            self.tile_size_miles, self.tx.centroid.y
+        centroid = self.tx.unary_union.centroid
+        _, self.delta_lon = self.miles_to_lat_lon_change(
+            centroid.y, centroid.x, self.tile_size_miles, 90
         )
+        self.delta_lat, _ = self.miles_to_lat_lon_change(
+            centroid.y, centroid.x, self.tile_size_miles, 0
+        )
+
+        print(self.tile_size_degrees)
+        print("lon: ", self.delta_lon, "lat: ", self.delta_lat)
 
         # Calculate the number of rows and columns in the fishnet
         self.xmin, self.ymin, self.xmax, self.ymax = self.tx.total_bounds
         self.x_size = self.xmax - self.xmin
         self.y_size = self.ymax - self.ymin
-        self.num_cols = math.ceil(self.x_size / self.tile_size_degrees)
-        self.num_rows = math.ceil(self.y_size / self.tile_size_degrees)
+        self.num_cols = math.ceil(self.x_size / self.delta_lon)
+        self.num_rows = math.ceil(self.y_size / self.delta_lat)
 
         # Create the fishnet polygons
         fishnet_polys = []
         for i in tqdm(range(self.num_rows)):
             for j in range(self.num_cols):
                 # Calculate the coordinates of the fishnet cell corners
-                x_min = self.xmin + j * self.tile_size_degrees
-                x_max = x_min + self.tile_size_degrees
-                y_max = self.ymax - i * self.tile_size_degrees
-                y_min = y_max - self.tile_size_degrees
+                x_min = self.xmin + j * self.delta_lon
+                x_max = x_min + self.delta_lon
+                y_max = self.ymax - i * self.delta_lat
+                y_min = y_max - self.delta_lat
                 tile_geom = box(x_min, y_min, x_max, y_max)
                 fishnet_polys.append(tile_geom)
 
@@ -113,13 +120,17 @@ class Fishnet:
             self.batch_tile_size = batch_tile_size
 
         # Convert batch tile size from miles to degrees
-        self.batch_tile_size_degrees = self.miles_to_degrees(
-            self.batch_tile_size, self.tx.centroid.y
+        centroid = self.tx.unary_union.centroid
+        _, self.batch_delta_lon = self.miles_to_lat_lon_change(
+            centroid.y, centroid.x, self.batch_tile_size, 90
+        )
+        self.batch_delta_lat, _ = self.miles_to_lat_lon_change(
+            centroid.y, centroid.x, self.batch_tile_size, 0
         )
 
         # Calculate the number of rows and columns in the batched fishnet
-        self.batch_cols = math.ceil(self.x_size / self.batch_tile_size_degrees)
-        self.batch_rows = math.ceil(self.y_size / self.batch_tile_size_degrees)
+        self.batch_cols = math.ceil(self.x_size / self.batch_delta_lon)
+        self.batch_rows = math.ceil(self.y_size / self.batch_delta_lat)
 
         # Create a dictionary to store the batch tile ID of each fishnet tile
         batch_dict = []
@@ -128,12 +139,8 @@ class Fishnet:
         for i, row in tqdm(self.fishnet.iterrows(), total=self.fishnet.shape[0]):
             col_idx = i % self.num_cols
             row_idx = i // self.num_cols
-            batch_col_idx = col_idx // (
-                self.batch_tile_size_degrees / self.tile_size_degrees
-            )
-            batch_row_idx = row_idx // (
-                self.batch_tile_size_degrees / self.tile_size_degrees
-            )
+            batch_col_idx = col_idx // (self.batch_delta_lon / self.delta_lon)
+            batch_row_idx = row_idx // (self.batch_delta_lat / self.delta_lat)
             batch_id = int(batch_row_idx * self.batch_cols + batch_col_idx)
             batch_dict.append(batch_id)
 
@@ -141,10 +148,10 @@ class Fishnet:
         batch_geoms = []
         for i in tqdm(range(self.batch_rows)):
             for j in range(self.batch_cols):
-                x_min = self.xmin + j * self.batch_tile_size_degrees
-                x_max = x_min + self.batch_tile_size_degrees
-                y_max = self.ymax - i * self.batch_tile_size_degrees
-                y_min = y_max - self.batch_tile_size_degrees
+                x_min = self.xmin + j * self.batch_delta_lon
+                x_max = x_min + self.batch_delta_lon
+                y_max = self.ymax - i * self.batch_delta_lat
+                y_min = y_max - self.batch_delta_lat
                 batch_geom = box(x_min, y_min, x_max, y_max)
                 batch_geoms.append(batch_geom)
 
@@ -221,21 +228,25 @@ class Fishnet:
             )
         plt.show()
 
-    def miles_to_degrees(self, miles, latitude):
-        """
-        Convert a distance in miles to decimal degrees at a specific latitude.
+    def miles_to_lat_lon_change(self, lat, lon, distance_miles, bearing_degrees):
+        R = 6371  # Earth's radius in kilometers
+        distance_km = distance_miles * 1.60934
 
-        This function uses the pyproj.Geod class to perform more accurate distance
-        calculations using a geodetic coordinate system (WGS84).
+        lat1_rad = math.radians(lat)
+        lon1_rad = math.radians(lon)
+        bearing_rad = math.radians(bearing_degrees)
 
-        Parameters:
-        miles (float): The distance in miles to be converted.
-        latitude (float): The latitude at which the conversion is to be performed.
+        lat2_rad = math.asin(
+            math.sin(lat1_rad) * math.cos(distance_km / R)
+            + math.cos(lat1_rad) * math.sin(distance_km / R) * math.cos(bearing_rad)
+        )
 
-        Returns:
-        float: The distance in decimal degrees corresponding to the input distance in miles.
-        """
-        geod = Geod(ellps="WGS84")
-        meters = miles * 1609.34
-        new_longitude, _, _ = geod.fwd(0, latitude, 90, meters)
-        return abs(new_longitude)
+        lon2_rad = lon1_rad + math.atan2(
+            math.sin(bearing_rad) * math.sin(distance_km / R) * math.cos(lat1_rad),
+            math.cos(distance_km / R) - math.sin(lat1_rad) * math.sin(lat2_rad),
+        )
+
+        lat2 = math.degrees(lat2_rad)
+        lon2 = math.degrees(lon2_rad)
+
+        return lat2 - lat, lon2 - lon
