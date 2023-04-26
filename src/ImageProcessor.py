@@ -23,7 +23,6 @@ class ImageProcessor:
         if self.filtered:
             self.fishnet = self.fh.filtered_fishnet
             self.batch_ids = self.fh.filtered_batches.index
-            self.min_batch_id = self.fh.filtered_batches.index.min()
         else:
             self.fishnet = self.fh.fishnet
             self.batch_ids = self.fh.batches.index
@@ -34,9 +33,8 @@ class ImageProcessor:
 
         for batch_id in tqdm(list(self.batch_ids), desc="Processing Images:"):
             image_path = os.path.join(
-                self.image_folder, f"{self.file_name}_{batch_id-self.min_batch_id}.tif"
+                self.image_folder, f"{self.file_name}_{batch_id}.tif"
             )
-            print(image_path)
             image = imageio.imread(image_path)
 
             # Extract image dimensions
@@ -62,6 +60,10 @@ class ImageProcessor:
                 built_label, self.temp_fishnet
             )
             self.fishnet.update(self.temp_fishnet)
+            print(self.get_unique_colors(image))
+            plt.imshow(image)
+
+            break
 
     def get_pixel_coordinates(self, df):
         # Use the apply() method with axis=1 to apply the latlong_to_pixel function to each row
