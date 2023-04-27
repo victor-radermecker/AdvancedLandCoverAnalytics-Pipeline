@@ -60,10 +60,6 @@ class ImageProcessor:
                 built_label, self.temp_fishnet
             )
             self.fishnet.update(self.temp_fishnet)
-            print(self.get_unique_colors(image))
-            plt.imshow(image)
-
-            break
 
     def get_pixel_coordinates(self, df):
         # Use the apply() method with axis=1 to apply the latlong_to_pixel function to each row

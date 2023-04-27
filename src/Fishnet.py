@@ -228,6 +228,31 @@ class Fishnet:
             )
         plt.show()
 
+    def plot_heatmap(self, filtered, zoom=True):
+        if filtered:
+            df = self.filtered_fishnet
+        else:
+            df = self.fishnet
+
+        if "MeanPixel" not in df.columns:
+            raise ValueError(
+                "Please use the ImageProcessor first to process the images"
+            )
+        else:
+            fig, ax = plt.subplots(figsize=(10, 18))
+            self.tx.plot(ax=ax, color="white", edgecolor="black")
+            df.plot(
+                ax=ax,
+                column="MeanPixel",
+                cmap="inferno",
+                edgecolor="gray",
+                linewidth=0.5,
+            )
+            if zoom:
+                ax.set_xlim(df.total_bounds[0], df.total_bounds[2])
+                ax.set_ylim(df.total_bounds[1], df.total_bounds[3])
+            plt.show()
+
     def miles_to_lat_lon_change(self, lat, lon, distance_miles, bearing_degrees):
         R = 6371  # Earth's radius in kilometers
         distance_km = distance_miles * 1.60934

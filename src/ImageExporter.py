@@ -39,6 +39,7 @@ class ImageExporter:
             landcover = geemap.dynamic_world(
                 batch_region, self.startDate, self.endDate, return_type="visualize"
             )
+            print(batch["batch_id"])
 
             # Save the image
             export_params = {
