@@ -34,8 +34,9 @@ class ImageExporter:
     def export_images(self, region):
         for i in tqdm(range(len(self.batches))):
             batch = self.batches.iloc[i]
+            geom_region = ee.Geometry.Rectangle(region)
             batch_region = ee.Geometry.Rectangle(batch["geometry"].bounds)
-            intersection = region.intersection(batch_region)
+            intersection = geom_region.intersection(batch_region)
             if intersection.is_empty().getInfo():
                 continue
 
