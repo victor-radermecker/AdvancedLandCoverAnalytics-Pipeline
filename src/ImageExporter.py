@@ -31,17 +31,13 @@ class ImageExporter:
         # Google Drive Folder that the export will reside in
         self.folder = folder
 
-    def export_images(self, region):
+    def export_images(self):
         for i in tqdm(range(len(self.batches))):
             batch = self.batches.iloc[i]
-            geom_region = ee.Geometry.Rectangle(region)
             batch_region = ee.Geometry.Rectangle(batch["geometry"].bounds)
-            intersection = geom_region.intersection(batch_region)
-            if intersection.is_empty().getInfo():
-                continue
 
             landcover = geemap.dynamic_world(
-                intersection, self.startDate, self.endDate, return_type="visualize"
+                batch_region, self.startDate, self.endDate, return_type="visualize"
             )
 
             # Save the image
@@ -50,7 +46,7 @@ class ImageExporter:
                 "description": f'landcover_batchID_{batch["batch_id"]}',
                 "folder": self.folder,  # Google Drive folder name
                 "scale": self.scale,  # Resolution in meters
-                "region": intersection,
+                "region": batch_region,
                 "fileFormat": self.fileFormat,
                 "maxPixels": self.maxPixels,  # Increase this value if you encounter an error due to the pixel limit
             }
