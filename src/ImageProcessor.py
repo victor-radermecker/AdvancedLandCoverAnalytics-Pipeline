@@ -14,11 +14,19 @@ tqdm.pandas()
 
 
 class ImageProcessor:
-    def __init__(self, fishnet, image_folder: str, file_name, filtered=False):
+    def __init__(
+        self,
+        fishnet,
+        image_folder: str,
+        file_name: str,
+        feature_name: str,
+        filtered=False,
+    ):
         self.filtered = filtered
         self.fh = fishnet
         self.image_folder = image_folder
         self.file_name = file_name
+        self.feature_name = feature_name
 
         if self.filtered:
             self.fishnet = self.fh.filtered_fishnet
@@ -29,7 +37,7 @@ class ImageProcessor:
 
     def process_images(self):
         self.fishnet["ImageCoordinates"] = np.nan
-        self.fishnet["MeanPixel"] = np.nan
+        self.fishnet[self.feature_name] = np.nan
 
         for batch_id in tqdm(list(self.batch_ids), desc="Processing Images:"):
             image_path = os.path.join(
@@ -56,7 +64,7 @@ class ImageProcessor:
             self.temp_fishnet["ImageCoordinates"] = self.get_pixel_coordinates(
                 self.temp_fishnet
             )
-            self.temp_fishnet["MeanPixel"] = self.get_mean_pixel_value(
+            self.temp_fishnet[self.feature_name] = self.get_mean_pixel_value(
                 built_label, self.temp_fishnet
             )
             self.fishnet.update(self.temp_fishnet)

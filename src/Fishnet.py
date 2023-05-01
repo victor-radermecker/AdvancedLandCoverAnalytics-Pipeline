@@ -6,7 +6,11 @@ import matplotlib.pyplot as plt
 import pickle
 import pandas as pd
 import math
-from shapely.geometry import box
+import matplotlib as mpl
+import numpy as np
+import seaborn as sns
+import folium
+import branca.colormap as cm
 
 
 class Fishnet:
@@ -228,30 +232,173 @@ class Fishnet:
             )
         plt.show()
 
-    def plot_heatmap(self, filtered, zoom=True):
+    # def plot_heatmap(self, feature, filtered, zoom=True):
+    #     if filtered:
+    #         df = self.filtered_fishnet
+    #     else:
+    #         df = self.fishnet
+
+    #     if feature not in df.columns:
+    #         raise ValueError("The feature is not available in the Fishnet object.")
+    #     else:
+    #         fig, ax = plt.subplots(figsize=(10, 18))
+    #         self.tx.plot(ax=ax, color="white", edgecolor="black")
+
+    #         # Plot the heatmap using imshow
+    #         sc = ax.imshow(np.array(df[feature]), cmap="inferno", origin="lower")
+
+    #         if zoom:
+    #             ax.set_xlim(df.total_bounds[0], df.total_bounds[2])
+    #             ax.set_ylim(df.total_bounds[1], df.total_bounds[3])
+
+    #     # Add a horizontal colorbar below the plot
+    #     cax = fig.add_axes([0.1, 0.15, 0.8, 0.03])
+    #     cbar = plt.colorbar(sc, cax=cax, orientation="horizontal")
+
+    #     plt.show()
+
+    # def plot_heatmap(self, feature, filtered, zoom=True):
+    #     if filtered:
+    #         df = self.filtered_fishnet
+    #     else:
+    #         df = self.fishnet
+
+    #     if feature not in df.columns:
+    #         raise ValueError("The feature is not available in the Fishnet object.")
+    #     else:
+    #         fig, ax = plt.subplots(figsize=(10, 18))
+    #         self.tx.plot(ax=ax, color="white", edgecolor="black")
+    #         # sc = df.plot(
+    #         #     ax=ax,
+    #         #     column=feature,
+    #         #     cmap="inferno",
+    #         #     edgecolor="gray",
+    #         #     linewidth=0.5,
+    #         # )
+    #         sc = ax.imshow(np.array(df[feature]), cmap="inferno", origin="lower")
+
+    #         if zoom:
+    #             ax.set_xlim(df.total_bounds[0], df.total_bounds[2])
+    #             ax.set_ylim(df.total_bounds[1], df.total_bounds[3])
+
+    #     # Add a horizontal colorbar below the plot
+    #     cax = fig.add_axes([0.1, 0.15, 0.8, 0.03])
+    #     cbar = plt.colorbar(sc, cax=cax, orientation="horizontal")
+
+    #     plt.show()
+
+    # def plot_heatmap(self, feature, filtered, zoom=True):
+    #     if filtered:
+    #         df = self.filtered_fishnet
+    #     else:
+    #         df = self.fishnet
+
+    #     if feature not in df.columns:
+    #         raise ValueError("The feature is not available in the Fishnet object.")
+    #     else:
+    #         fig, ax = plt.subplots(figsize=(10, 18))
+    #         self.tx.plot(ax=ax, color="white", edgecolor="black")
+    #         df.plot(
+    #             ax=ax,
+    #             column=feature,
+    #             cmap="YlGn",
+    #             edgecolor="gray",
+    #             linewidth=0.5,
+    #             legend=True,
+    #         )
+
+    #         # Add title and axis labels
+    #         plt.title("Choropleth Map")
+    #         plt.xlabel("Longitude")
+    #         plt.ylabel("Latitude")
+
+    #         # Place the legend under the plot and rotate it by 90 degrees
+    #         leg = ax.get_legend()
+    #         leg.set_bbox_to_anchor((0, 0, 1, 0.15))
+    #         leg.set_title("Feature")
+    #         plt.setp(leg.get_title(), fontsize=12)
+    #         plt.setp(leg.get_texts(), fontsize=10)
+    #         leg._loc = 2
+    #         leg.set_frame_on(True)
+    #         leg.set_edgecolor("black")
+    #         leg.set_linewidth(0.5)
+    #         leg.set_alpha(0.7)
+
+    #         if zoom:
+    #             ax.set_xlim(df.total_bounds[0], df.total_bounds[2])
+    #             ax.set_ylim(df.total_bounds[1], df.total_bounds[3])
+
+    #     plt.show()
+
+    # def plot_heatmap(self, feature, filtered, zoom=True):
+    #     if filtered:
+    #         df = self.filtered_fishnet
+    #     else:
+    #         df = self.fishnet
+
+    #     if feature not in df.columns:
+    #         raise ValueError("The feature is not available in the DataFrame.")
+    #     else:
+    #         df = gpd.GeoDataFrame(df, geometry="geometry", crs={"init": "epsg:4326"})
+    #         geo = gpd.GeoSeries(df.set_index("batch_id")["geometry"]).to_json()
+    #         avg_lat = df["geometry"].apply(lambda x: x.centroid.y).mean()
+    #         avg_lon = df["geometry"].apply(lambda x: x.centroid.x).mean()
+    #         map = folium.Map(location=[avg_lat, avg_lon], zoom_start=11)
+
+    #         choropleth = folium.Choropleth(
+    #             geo_data=geo,
+    #             name="choropleth",
+    #             data=df,
+    #             columns=["batch_id", feature],
+    #             key_on="feature.id",
+    #             fill_opacity=0.7,
+    #             fill_color="YlOrRd",
+    #             line_opacity=0.8,
+    #             legend_name=feature,
+    #         )
+    #         choropleth.add_to(map)
+
+    #         return map
+
+    def plot_heatmap(self, feature, filtered, zoom=True):
         if filtered:
             df = self.filtered_fishnet
         else:
             df = self.fishnet
 
-        if "MeanPixel" not in df.columns:
-            raise ValueError(
-                "Please use the ImageProcessor first to process the images"
-            )
+        if feature not in df.columns:
+            raise ValueError("The feature is not available in the DataFrame.")
         else:
-            fig, ax = plt.subplots(figsize=(10, 18))
-            self.tx.plot(ax=ax, color="white", edgecolor="black")
-            df.plot(
-                ax=ax,
-                column="MeanPixel",
-                cmap="inferno",
-                edgecolor="gray",
-                linewidth=0.5,
+            df = gpd.GeoDataFrame(df, geometry="geometry", crs={"init": "epsg:4326"})
+            geo = {
+                "type": "FeatureCollection",
+                "features": df.apply(
+                    lambda row: {
+                        "type": "Feature",
+                        "geometry": row["geometry"].__geo_interface__,
+                        "properties": {"id": row["id"]},
+                    },
+                    axis=1,
+                ).tolist(),
+            }
+            avg_lat = df["geometry"].apply(lambda x: x.centroid.y).mean()
+            avg_lon = df["geometry"].apply(lambda x: x.centroid.x).mean()
+            map = folium.Map(location=[avg_lat, avg_lon], zoom_start=11)
+
+            choropleth = folium.Choropleth(
+                geo_data=geo,
+                name="choropleth",
+                data=df,
+                columns=["id", feature],
+                key_on="feature.properties.id",
+                fill_opacity=0.7,
+                fill_color="YlOrRd",
+                line_opacity=0.8,
+                legend_name=feature,
             )
-            if zoom:
-                ax.set_xlim(df.total_bounds[0], df.total_bounds[2])
-                ax.set_ylim(df.total_bounds[1], df.total_bounds[3])
-            plt.show()
+            choropleth.add_to(map)
+
+            return map
 
     def miles_to_lat_lon_change(self, lat, lon, distance_miles, bearing_degrees):
         R = 6371  # Earth's radius in kilometers
@@ -275,3 +422,18 @@ class Fishnet:
         lon2 = math.degrees(lon2_rad)
 
         return lat2 - lat, lon2 - lon
+
+    def compute_difference(self, feature1, feature2, filtered=False, normalize=False):
+        if filtered:
+            df = self.filtered_fishnet
+        else:
+            df = self.fishnet
+
+        if feature1 not in df.columns or feature2 not in df.columns:
+            raise ValueError(
+                "One of the features is not available in the Fishnet object."
+            )
+        else:
+            df[feature1 + "-" + feature2] = df[feature1] - df[feature2]
+            if normalize:
+                df[feature1 + "-" + feature2] = df[feature1 + "-" + feature2] / 255
