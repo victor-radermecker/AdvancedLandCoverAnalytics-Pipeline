@@ -11,6 +11,7 @@ import numpy as np
 import seaborn as sns
 import folium
 import branca.colormap as cm
+from shapely.geometry import box
 
 
 class Fishnet:
@@ -47,9 +48,6 @@ class Fishnet:
         self.delta_lat, _ = self.miles_to_lat_lon_change(
             centroid.y, centroid.x, self.tile_size_miles, 0
         )
-
-        print(self.tile_size_degrees)
-        print("lon: ", self.delta_lon, "lat: ", self.delta_lat)
 
         # Calculate the number of rows and columns in the fishnet
         self.xmin, self.ymin, self.xmax, self.ymax = self.tx.total_bounds
