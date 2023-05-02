@@ -1,45 +1,48 @@
-# Capstone_JPMorgan
+# 🌆 Capstone: JPMorgan Urbanization Analysis
 
-Project objective: Use satellite &amp; GIS data, socio-demographic indicators to quantify urbanization rate. Analysis will inform JPMorgan's client base, support existing hubs, and identify new opportunities.
+**Project Objective:** Utilize satellite & GIS data, along with socio-demographic indicators, to quantify urbanization rates. This analysis will inform JPMorgan's client base, support existing hubs, and identify new opportunities.
 
-## Instructions to set up the project
+## 🚀 Getting Started
 
-### 1. Clone the repository
+Follow these instructions to set up the project on your local machine.
+
+### 1. Clone the Repository
 
 ```bash
 git clone git@github.com:victor-radermecker/Capstone_JPMorgan.git
 ```
 
-Create a conda environment using the requirements.yml file.
+Create a conda environment using the `requirements.yml` file.
 
 ```bash
 conda env create -f requirements.yml
 ```
 
-Activate the conda environment using
+Activate the conda environment using:
 
 ```bash
 conda activate capstone
 ```
 
-### 2. Download the data
+### 2. Download the Data
 
 All files are available here:
-https://www.dropbox.com/scl/fo/i6r9qx73a0lervrd2crpk/h?dl=0&rlkey=g8twup5jtib6h3xnle353dvtg
 
-The structure of the should be as follows:
+[Dropbox Link](https://www.dropbox.com/scl/fo/i6r9qx73a0lervrd2crpk/h?dl=0&rlkey=g8twup5jtib6h3xnle353dvtg)
+
+The structure of the project folder should be as follows:
 
 ```
 Capstone_JPMorgan
-├── `Images`
+├── Images
 │   ├── export_2016
-    │   ├── ...
+│   │   ├── ...
 │   ├── export_2022
-    │   ├── ...
-├── `Gis`
+│   │   ├── ...
+├── Gis
 │   ├── ...
 ├── src
 │   ├── ...
 ```
 
-### 3. Run the notebooks
+### 3. Run the Notebooks
