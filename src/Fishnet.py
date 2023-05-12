@@ -183,7 +183,7 @@ class Fishnet:
         with open(file_path, "wb") as file:
             pickle.dump(self, file)
 
-    def load(self, file_path):
+    def load(file_path):
         """
         Load a Fishnet object from a file using pickle.
 
