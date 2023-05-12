@@ -20,9 +20,9 @@ class ImageExporter:
             self.fishnet = self.fh.fishnet
             self.batches = self.fh.batches
 
-    def set_date_range(self, year):
-        startDate = f"{year}-05-01"
-        endDate = f"{year}-09-01"
+    def set_date_range(self, year, startMonth, endMonth):
+        startDate = f"{year}-{startMonth}-01"
+        endDate = f"{year}-{endMonth}-01"
 
         self.startDate = startDate
         self.endDate = endDate
