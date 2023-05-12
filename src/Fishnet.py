@@ -68,6 +68,7 @@ class Fishnet:
                 tile_geom = box(x_min, y_min, x_max, y_max)
                 fishnet_polys.append(tile_geom)
 
+
         # Create a GeoDataFrame from the fishnet polygons
         print("Generating polygons...")
         self.fishnet = gpd.GeoDataFrame(
@@ -435,3 +436,21 @@ class Fishnet:
             df[feature1 + "-" + feature2] = df[feature1] - df[feature2]
             if normalize:
                 df[feature1 + "-" + feature2] = df[feature1 + "-" + feature2] / 255
+
+          
+    def row_col_to_id(self, i, j):
+        return i * self.num_rows + j
+                
+    def compute_neighbours(self):
+
+        self.neighbours = {}
+
+        for i in range(self.num_rows):
+            for j in range(self.num_cols):
+
+                neighbour_indices = [(i+ii, j+jj) for ii in range(-1, 2) for jj in range(-1, 2) if (ii != 0 or jj != 0)]
+                neighbour_indices = [(x,y) for x,y in neighbour_indices if x >= 0 and x < self.num_rows and y >= 0 and y < self.num_cols]
+                neighbour_ids = [self.row_col_to_id(x,y) for x,y in neighbour_indices]
+                self.neighbours[self.row_col_to_id(i,j)] = neighbour_ids
+                
+        print("All neighbors computed successfully.")
