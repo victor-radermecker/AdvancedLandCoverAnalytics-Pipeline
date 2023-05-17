@@ -46,3 +46,11 @@ Capstone_JPMorgan
 ```
 
 ### 3. Run the Notebooks
+
+### 4. Refresh the YML conda environment file
+
+Use the following command to refresh the requirements.yml file used to generate the conda environment.
+
+```bash
+conda env export --file environment.yml
+```
