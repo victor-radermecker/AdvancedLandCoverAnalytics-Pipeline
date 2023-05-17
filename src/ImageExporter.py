@@ -1,6 +1,6 @@
 import ee
-import geemap
 from tqdm import tqdm
+import GeemapUtils as geemap
 
 ee.Initialize()
 
