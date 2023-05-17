@@ -1,17 +1,21 @@
 import geopandas as gpd
 from shapely.geometry import Polygon
-from pyproj import Geod
+
+# from pyproj import Geod
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import pickle
 import pandas as pd
 import math
-import matplotlib as mpl
-import numpy as np
-import seaborn as sns
+
+# import matplotlib as mpl
+# import numpy as np
+# import seaborn as sns
 import folium
-import branca.colormap as cm
+
+# import branca.colormap as cm
 from shapely.geometry import box
+from tqdm import tqdm
 
 
 class Fishnet:
@@ -169,31 +173,45 @@ class Fishnet:
         self.fishnet["batch_id"] = pd.Series(batch_dict)
 
     # -------------------------------------------------------------------------- #
-    #                               Utils                                       #
+    #                          Tile Neighbors                                    #
     # -------------------------------------------------------------------------- #
 
-    def save(self, file_path):
-        """
-        Save the Fishnet object to a file using pickle.
+    def compute_neighbors(self):
+        self.neighbors = {}
 
-        Parameters:
-        file_path (str): The file path to save the Fishnet object.
-        """
-        with open(file_path, "wb") as file:
-            pickle.dump(self, file)
+        for i in tqdm(
+            range(self.num_rows), total=self.num_rows, desc="Computing neighbors..."
+        ):
+            for j in range(self.num_cols):
+                neighbor_indices = [
+                    (i + ii, j + jj)
+                    for ii in range(-1, 2)
+                    for jj in range(-1, 2)
+                    if (ii != 0 or jj != 0)
+                ]
+                neighbor_indices = [
+                    (x, y)
+                    for x, y in neighbor_indices
+                    if x >= 0 and x < self.num_rows and y >= 0 and y < self.num_cols
+                ]
+                neighbor_ids = [self.row_col_to_id(x, y) for x, y in neighbor_indices]
+                self.neighbors[self.row_col_to_id(i, j)] = neighbor_ids
 
-    def load(file_path):
-        """
-        Load a Fishnet object from a file using pickle.
+        # add neighbors to fishnet
+        self.fishnet["neighbors"] = self.fishnet.apply(
+            lambda row: self.neighbors[row["id"]], axis=1
+        )
 
-        Parameters:
-        file_path (str): The file path of the saved Fishnet object.
+        # add neighbors to filtered fishnet
+        self.filtered_fishnet["neighbors"] = self.filtered_fishnet.apply(
+            lambda row: self.neighbors[row["id"]], axis=1
+        )
 
-        Returns:
-        Fishnet: The loaded Fishnet object.
-        """
-        with open(file_path, "rb") as file:
-            return pickle.load(file)
+        print("All neighbors computed successfully.")
+
+    # -------------------------------------------------------------------------- #
+    #                               Plots                                        #
+    # -------------------------------------------------------------------------- #
 
     def plot_fishnet(self):
         fig, ax = plt.subplots(figsize=(10, 10))
@@ -269,6 +287,71 @@ class Fishnet:
 
             return map
 
+    def plot_neighbor(self):
+        # sample one random row from geodataframe
+        row = self.fishnet.sample()
+
+        # find coordinates of centroid of geometry
+        # find map center
+        mean_x = (row["geometry"].bounds["minx"] + row["geometry"].bounds["maxx"]) / 2
+        mean_y = (row["geometry"].bounds["miny"] + row["geometry"].bounds["maxy"]) / 2
+
+        # find all neighbors
+        neighbors = self.fishnet[self.fishnet["id"].isin(list(row["neighbors"])[0])]
+
+        # create empty map
+        m = folium.Map(
+            location=[mean_y, mean_x], zoom_start=15, tiles="CartoDB positron"
+        )
+
+        # add polygon corresponding to id considered
+        m = self.add_polygon_to_map(m, row)
+
+        # add polygons corresponding to neighbors
+        for _, r in neighbors.iterrows():
+            m = self.add_polygon_to_map(m, r)
+
+        # show map
+        display(m)
+
+    def add_polygon_to_map(self, m, r):
+        # given map object and row from geodataframe, add to map the corresponding geometry
+        sim_geo = gpd.GeoSeries(r["geometry"]).simplify(tolerance=0.001)
+        geo_j = sim_geo.to_json()
+        geo_j = folium.GeoJson(
+            data=geo_j, style_function=lambda x: {"fillColor": "orange"}
+        )
+        geo_j.add_to(m)
+
+        return m
+
+    # -------------------------------------------------------------------------- #
+    #                               Utils                                        #
+    # -------------------------------------------------------------------------- #
+
+    def save(self, file_path):
+        """
+        Save the Fishnet object to a file using pickle.
+
+        Parameters:
+        file_path (str): The file path to save the Fishnet object.
+        """
+        with open(file_path, "wb") as file:
+            pickle.dump(self, file)
+
+    def load(file_path):
+        """
+        Load a Fishnet object from a file using pickle.
+
+        Parameters:
+        file_path (str): The file path of the saved Fishnet object.
+
+        Returns:
+        Fishnet: The loaded Fishnet object.
+        """
+        with open(file_path, "rb") as file:
+            return pickle.load(file)
+
     def miles_to_lat_lon_change(self, lat, lon, distance_miles, bearing_degrees):
         R = 6371  # Earth's radius in kilometers
         distance_km = distance_miles * 1.60934
@@ -309,29 +392,3 @@ class Fishnet:
 
     def row_col_to_id(self, i, j):
         return i * self.num_cols + j
-
-    def compute_neighbours(self):
-        self.neighbours = {}
-
-        for i in range(self.num_rows):
-            for j in range(self.num_cols):
-                neighbour_indices = [
-                    (i + ii, j + jj)
-                    for ii in range(-1, 2)
-                    for jj in range(-1, 2)
-                    if (ii != 0 or jj != 0)
-                ]
-                neighbour_indices = [
-                    (x, y)
-                    for x, y in neighbour_indices
-                    if x >= 0 and x < self.num_rows and y >= 0 and y < self.num_cols
-                ]
-                neighbour_ids = [self.row_col_to_id(x, y) for x, y in neighbour_indices]
-                self.neighbours[self.row_col_to_id(i, j)] = neighbour_ids
-
-        # add neighbors to fishnet
-        self.fishnet["neighbours"] = self.fishnet.apply(
-            lambda row: self.neighbours[row["id"]], axis=1
-        )
-
-        print("All neighbors computed successfully.")
