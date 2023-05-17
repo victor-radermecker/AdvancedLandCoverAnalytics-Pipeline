@@ -308,7 +308,7 @@ class Fishnet:
                 df[feature1 + "-" + feature2] = df[feature1 + "-" + feature2] / 255
 
     def row_col_to_id(self, i, j):
-        return i * self.num_rows + j
+        return i * self.num_cols + j
 
     def compute_neighbours(self):
         self.neighbours = {}
