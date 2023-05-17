@@ -329,4 +329,9 @@ class Fishnet:
                 neighbour_ids = [self.row_col_to_id(x, y) for x, y in neighbour_indices]
                 self.neighbours[self.row_col_to_id(i, j)] = neighbour_ids
 
+        # add neighbors to fishnet
+        self.fishnet["neighbours"] = self.fishnet.apply(
+            lambda row: self.neighbours[row["id"]], axis=1
+        )
+
         print("All neighbors computed successfully.")
