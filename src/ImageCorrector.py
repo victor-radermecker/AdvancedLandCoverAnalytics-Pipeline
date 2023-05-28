@@ -100,6 +100,7 @@ class ImageCorrector:
             entry
             for entry in os.listdir(self.base_path)
             if os.path.isdir(os.path.join(self.base_path, entry))
+            and entry.startswith("export_")
         ]
 
     def count_images(self, path):

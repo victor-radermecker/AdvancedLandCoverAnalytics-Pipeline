@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import imageio
 
 tqdm.pandas()
@@ -10,12 +10,14 @@ class ImageProcessor:
     def __init__(
         self,
         fishnet,
+        year,
         image_folder: str,
         file_name: str,
         feature_name: str,
         filtered=False,
     ):
         self.filtered = filtered
+        self.year = year
         self.fh = fishnet
         self.image_folder = image_folder
         self.file_name = file_name
@@ -32,7 +34,7 @@ class ImageProcessor:
         self.fishnet["ImageCoordinates"] = np.nan
         self.fishnet[self.feature_name] = np.nan
 
-        for batch_id in tqdm(list(self.batch_ids), desc="Processing Images:"):
+        for batch_id in tqdm(list(self.batch_ids), desc="Processing Images"):
             image_path = os.path.join(
                 self.image_folder, f"{self.file_name}_{batch_id}.tif"
             )
@@ -46,7 +48,7 @@ class ImageProcessor:
                 image, (196, 40, 27)
             )  # Assuming "built" is represented by white pixels red #  [196  40  27] for red in DW
 
-            self.temp_fishnet = self.fishnet[
+            temp_fishnet = self.fishnet[
                 self.fishnet["batch_id"] == batch_id
             ].copy()
 
@@ -54,13 +56,13 @@ class ImageProcessor:
                 self.fh.batches["batch_id"] == batch_id
             ]["geometry"].bounds.values[0]
 
-            self.temp_fishnet["ImageCoordinates"] = self.get_pixel_coordinates(
-                self.temp_fishnet
+            temp_fishnet["ImageCoordinates"] = self.get_pixel_coordinates(
+                temp_fishnet
             )
-            self.temp_fishnet[self.feature_name] = self.get_mean_pixel_value(
-                built_label, self.temp_fishnet
+            temp_fishnet[self.feature_name] = self.get_mean_pixel_value(
+                built_label, temp_fishnet
             )
-            self.fishnet.update(self.temp_fishnet)
+            self.fishnet.update(temp_fishnet)
 
     def get_pixel_coordinates(self, df):
         # Use the apply() method with axis=1 to apply the latlong_to_pixel function to each row
@@ -127,3 +129,43 @@ class ImageProcessor:
         unique_colors = np.unique(reshaped_image, axis=0)
 
         return unique_colors
+    
+    def cnn_partition_images(self, warning=True, show_progress=True):
+
+        # Write a message to the user: "Warning, this code will create a new folder CNN in the image folder, which may take a lot of space on the hard drive. Continue?"
+        # If the user says yes, continue, otherwise, stop the code
+        if warning:
+            answer = input("Warning, this code will create a new folder CNN in the image folder, which may take a lot of space on the hard drive. Continue? Yes or No?")
+        else:
+            answer = "Yes"
+
+        if answer == "Yes":
+            progress_bar = tqdm(list(self.batch_ids), ncols=80, bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt}', disable=show_progress)
+
+            for batch_id in progress_bar:
+                image_path = os.path.join(
+                    self.image_folder, f"{self.file_name}_{batch_id}.tif"
+                )
+                image = imageio.imread(image_path)
+
+                # extract all fishnet tile ids in the current batch
+                fishnet_tiles = self.fishnet[
+                    self.fishnet["batch_id"] == batch_id
+                ]["id"]
+
+                for tile_id in fishnet_tiles:
+                    tile = self.fishnet[self.fishnet["id"] == tile_id]
+                    xmin, ymin, xmax, ymax = tile["ImageCoordinates"].values[0]
+                    subimage = image[ymin:ymax, xmin:xmax]
+
+                    # check if the directory self.image_folder + 'CNN' exists, otherwise, create it
+                    if not os.path.exists(self.image_folder + f'../../CNN/{self.year}/'):
+                        os.makedirs(self.image_folder + f'../../CNN/{self.year}/')
+                        print("Directory " , self.image_folder + f'../CNN/{self.year}/' ,  " Created ")
+
+                    export_path = self.image_folder + f'../../CNN/{self.year}/' + f"/{int(tile_id)}.tif"
+                    imageio.imwrite(export_path, subimage)
+
+        else:
+            print("Aborted.")
+
