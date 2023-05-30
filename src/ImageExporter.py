@@ -6,12 +6,13 @@ ee.Initialize()
 
 
 class ImageExporter:
-    def __init__(self, fishnet, filtered, scale=10):
+    def __init__(self, fishnet, filtered, scale=10, source = "GOOGLE/DYNAMICWORLD/V1"):  # "USGS/NLCD_RELEASES/2019_REL/NLCD" for NLCD
         self.fh = fishnet
         self.scale = scale
         self.fileFormat = "GeoTIFF"
         self.maxPixels = 1e10
         self.filtered = filtered
+        self.source = source
 
         if self.filtered:
             self.fishnet = self.fh.filtered_fishnet
@@ -37,7 +38,7 @@ class ImageExporter:
             batch_region = ee.Geometry.Rectangle(batch["geometry"].bounds)
 
             landcover = geemap.dynamic_world(
-                batch_region, self.startDate, self.endDate, return_type="visualize"
+                batch_region, self.startDate, self.endDate, return_type="visualize", source = self.source
             )
 
             # Save the image
