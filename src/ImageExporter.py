@@ -37,9 +37,12 @@ class ImageExporter:
             batch = self.batches.iloc[i]
             batch_region = ee.Geometry.Rectangle(batch["geometry"].bounds)
 
-            landcover = geemap.dynamic_world(
-                batch_region, self.startDate, self.endDate, return_type="visualize", source = self.source
-            )
+            if self.source == "GOOGLE/DYNAMICWORLD/V1":
+                landcover = geemap.dynamic_world(
+                    batch_region, self.startDate, self.endDate, return_type="visualize", source = self.source
+                )
+            elif self.source == "USGS/NLCD_RELEASES/2019_REL/NLCD":
+                landcover = ee.ImageCollection("USGS/NLCD_RELEASES/2019_REL/NLCD").filterBounds(batch_region).select("landcover")
 
             # Save the image
             export_params = {
