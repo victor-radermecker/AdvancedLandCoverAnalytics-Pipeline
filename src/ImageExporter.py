@@ -27,6 +27,7 @@ class ImageExporter:
 
         self.startDate = startDate
         self.endDate = endDate
+        self.year = startYear
 
     def set_folder(self, folder):
         # Google Drive Folder that the export will reside in
@@ -42,7 +43,8 @@ class ImageExporter:
                     batch_region, self.startDate, self.endDate, return_type="visualize", source = self.source
                 )
             elif self.source == "USGS/NLCD_RELEASES/2019_REL/NLCD":
-                landcover = ee.ImageCollection("USGS/NLCD_RELEASES/2019_REL/NLCD").filterBounds(batch_region).select("landcover")
+                nlcd = ee.ImageCollection("USGS/NLCD_RELEASES/2019_REL/NLCD").filter(ee.Filter.eq('system:index', f'{self.year}')).first()
+                landcover = nlcd.clip(batch_region).select(['landcover'])
 
             # Save the image
             export_params = {
