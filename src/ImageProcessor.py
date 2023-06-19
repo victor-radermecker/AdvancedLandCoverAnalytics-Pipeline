@@ -10,18 +10,10 @@ class ImageProcessor:
     def __init__(
         self,
         fishnet,
-        year,
-        image_folder: str,
-        file_name: str,
-        feature_name: str,
         filtered=False,
     ):
         self.filtered = filtered
-        self.year = year
         self.fh = fishnet
-        self.image_folder = image_folder
-        self.file_name = file_name
-        self.feature_name = feature_name
 
         if self.filtered:
             self.fishnet = self.fh.filtered_fishnet
@@ -30,15 +22,42 @@ class ImageProcessor:
             self.fishnet = self.fh.fishnet
             self.batch_ids = self.fh.batches.index
 
-    def process_images(self):
+    def assign_fishnet_tiles_to_pixels(self, image_folder, file_name):
         self.fishnet["ImageCoordinates"] = np.nan
-        self.fishnet[self.feature_name] = np.nan
+        for batch_id in tqdm(list(self.batch_ids), desc="Processing Images"):
+            image_path = os.path.join(image_folder, f"{file_name}_{batch_id}.tif")
+            image = imageio.imread(image_path)
+            if image is None:
+                raise Exception("Error reading image.")
+
+            # Extract image dimensions
+            self.img_height, self.img_width, _ = image.shape
+
+            temp_fishnet = self.fishnet[self.fishnet["batch_id"] == batch_id].copy()
+
+            self.batch_geometry = self.fh.batches.loc[
+                self.fh.batches["batch_id"] == batch_id
+            ]["geometry"].bounds.values[0]
+
+            temp_fishnet["ImageCoordinates"] = self.get_pixel_coordinates(temp_fishnet)
+
+            self.fishnet.update(temp_fishnet)
+
+        self.fishnet["Width"] = self.fishnet["ImageCoordinates"].apply(
+            lambda x: x[2] - x[0]
+        )
+        self.fishnet["Height"] = self.fishnet["ImageCoordinates"].apply(
+            lambda x: x[3] - x[1]
+        )
+
+    def compute_mean_tile_urbanization(self, image_folder, file_name, feature_name):
+        self.fishnet[feature_name] = np.nan
 
         for batch_id in tqdm(list(self.batch_ids), desc="Processing Images"):
-            image_path = os.path.join(
-                self.image_folder, f"{self.file_name}_{batch_id}.tif"
-            )
+            image_path = os.path.join(image_folder, f"{file_name}_{batch_id}.tif")
             image = imageio.imread(image_path)
+            if image is None:
+                raise Exception("Error reading image.")
 
             # Extract image dimensions
             self.img_height, self.img_width, _ = image.shape
@@ -48,20 +67,16 @@ class ImageProcessor:
                 image, (196, 40, 27)
             )  # Assuming "built" is represented by white pixels red #  [196  40  27] for red in DW
 
-            temp_fishnet = self.fishnet[
-                self.fishnet["batch_id"] == batch_id
-            ].copy()
+            temp_fishnet = self.fishnet[self.fishnet["batch_id"] == batch_id].copy()
 
             self.batch_geometry = self.fh.batches.loc[
                 self.fh.batches["batch_id"] == batch_id
             ]["geometry"].bounds.values[0]
 
-            temp_fishnet["ImageCoordinates"] = self.get_pixel_coordinates(
-                temp_fishnet
-            )
-            temp_fishnet[self.feature_name] = self.get_mean_pixel_value(
+            temp_fishnet[feature_name] = self.get_mean_pixel_value(
                 built_label, temp_fishnet
             )
+
             self.fishnet.update(temp_fishnet)
 
     def get_pixel_coordinates(self, df):
@@ -75,8 +90,27 @@ class ImageProcessor:
         return image_coordinates
 
     def latlong_to_pixel(self, batch_coords, tile_coords):
-        min_lon, min_lat, max_lon, max_lat = batch_coords
-        xmin, ymin, xmax, ymax = tile_coords
+        min_lon, min_lat, max_lon, max_lat = batch_coords  # long/lat format
+        xmin, ymin, xmax, ymax = tile_coords  # long/lat format
+
+        # check if xmin > min_lon, xmax>xmin, xmax < max_lon, ymin > min_lat, ymax > ymin, ymax < max_lat
+        if (
+            xmin < min_lon
+            or xmax < xmin
+            or xmax > max_lon
+            or ymin < min_lat
+            or ymax < ymin
+            or ymax > max_lat
+        ):
+            print("Xmin: ", xmin)
+            print("Xmax: ", xmax)
+            print("Ymin: ", ymin)
+            print("Ymax: ", ymax)
+            print("Min Lon: ", min_lon)
+            print("Max Lon: ", max_lon)
+            print("Min Lat: ", min_lat)
+            print("Max Lat: ", max_lat)
+            raise Exception("Error: Tile coordinates are not within batch coordinates.")
 
         # Normalize the bounding box coordinates
         x_min_pixel = int((xmin - min_lon) / (max_lon - min_lon) * self.img_width)
@@ -129,43 +163,62 @@ class ImageProcessor:
         unique_colors = np.unique(reshaped_image, axis=0)
 
         return unique_colors
-    
-    def cnn_partition_images(self, warning=True, show_progress=True):
 
-        # Write a message to the user: "Warning, this code will create a new folder CNN in the image folder, which may take a lot of space on the hard drive. Continue?"
+    def cnn_partition_images(
+        self,
+        image_folder,
+        file_name,
+        year,
+        warning=True,
+        show_progress=True,
+    ):
+        # Write a message to the user: "Warning, this code will create a new folder CNN in the /Image/ folder, which may take a lot of space on the hard drive. Continue?"
         # If the user says yes, continue, otherwise, stop the code
         if warning:
-            answer = input("Warning, this code will create a new folder CNN in the image folder, which may take a lot of space on the hard drive. Continue? Yes or No?")
+            answer = input(
+                "Warning, this code will create a new folder CNN in the /Image/ folder, which may take a lot of space on the hard drive. Continue? Yes or No?"
+            )
         else:
             answer = "Yes"
 
         if answer == "Yes":
-            progress_bar = tqdm(list(self.batch_ids), ncols=80, bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt}', disable=show_progress)
+            progress_bar = tqdm(
+                list(self.batch_ids),
+                ncols=80,
+                bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt}",
+                disable=show_progress,
+            )
 
             for batch_id in progress_bar:
-                image_path = os.path.join(
-                    self.image_folder, f"{self.file_name}_{batch_id}.tif"
-                )
+                image_path = os.path.join(image_folder, f"{file_name}_{batch_id}.tif")
                 image = imageio.imread(image_path)
 
                 # extract all fishnet tile ids in the current batch
-                fishnet_tiles = self.fishnet[
-                    self.fishnet["batch_id"] == batch_id
-                ]["id"]
+                fishnet_tiles = self.fishnet[self.fishnet["batch_id"] == batch_id]["id"]
 
                 for tile_id in fishnet_tiles:
                     tile = self.fishnet[self.fishnet["id"] == tile_id]
                     xmin, ymin, xmax, ymax = tile["ImageCoordinates"].values[0]
                     subimage = image[ymin:ymax, xmin:xmax]
 
-                    # check if the directory self.image_folder + 'CNN' exists, otherwise, create it
-                    if not os.path.exists(self.image_folder + f'../../CNN/{self.year}/'):
-                        os.makedirs(self.image_folder + f'../../CNN/{self.year}/')
-                        print("Directory " , self.image_folder + f'../CNN/{self.year}/' ,  " Created ")
+                    if subimage.shape[0] < 30 or subimage.shape[1] < 30:
+                        raise Exception(
+                            f"Subimage {tile_id} in batch {batch_id} is too small. Please check the image and fishnet."
+                        )
 
-                    export_path = self.image_folder + f'../../CNN/{self.year}/' + f"/{int(tile_id)}.tif"
+                    # check if the directory self.image_folder + 'CNN' exists, otherwise, create it
+                    if not os.path.exists(image_folder + f"../../CNN/{year}/"):
+                        os.makedirs(image_folder + f"../../CNN/{year}/")
+                        print(
+                            "Directory ",
+                            image_folder + f"../CNN/{year}/",
+                            " Created ",
+                        )
+
+                    export_path = (
+                        image_folder + f"../../CNN/{year}/" + f"/{int(tile_id)}.tif"
+                    )
                     imageio.imwrite(export_path, subimage)
 
         else:
             print("Aborted.")
-
