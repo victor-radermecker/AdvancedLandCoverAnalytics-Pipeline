@@ -43,6 +43,7 @@ class ImageExporter:
                     batch_region, self.startDate, self.endDate, return_type="visualize", source = self.source
                 )
             elif self.source == "USGS/NLCD_RELEASES/2019_REL/NLCD":
+                
                 nlcd = ee.ImageCollection("USGS/NLCD_RELEASES/2019_REL/NLCD").filter(ee.Filter.eq('system:index', f'{self.year}')).first()
                 landcover = nlcd.clip(batch_region).select(['landcover'])
 
