@@ -100,6 +100,7 @@ class ImageCorrector:
             entry
             for entry in os.listdir(self.base_path)
             if os.path.isdir(os.path.join(self.base_path, entry))
+            and entry.startswith("export_")
         ]
 
     def count_images(self, path):
@@ -114,7 +115,7 @@ class ImageCorrector:
         return [
             entry
             for entry in os.listdir(path)
-            if os.path.isfile(os.path.join(path, entry))
+            if os.path.isfile(os.path.join(path, entry)) and entry.endswith(".tif")
         ]
 
     def read_image(self, path):
@@ -123,7 +124,7 @@ class ImageCorrector:
     def save_image(self, path, img):
         cv2.imwrite(path, img)
 
-    def process_images(self):
+    def correct_images(self):
         print("Imputing Summer missing pixels with Year data. Processing images...")
         for year in self.years:
             summer_path = os.path.join(self.base_path, str(year), "Summer")
@@ -161,6 +162,7 @@ class ImageCorrector:
             img = self.read_image(os.path.join(path, file))
 
             if img is None:
+                print(file)
                 raise Exception("Error reading image.")
 
             total_pixels += np.size(img)
