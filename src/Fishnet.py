@@ -275,9 +275,11 @@ class Fishnet:
         self.neighbors = {}
 
         for i in tqdm(
-            range(self.num_rows), total=self.num_rows, desc="Computing neighbors..."
+            range(self.fishnet_cols),
+            total=self.fishnet_rows,
+            desc="Computing neighbors...",
         ):
-            for j in range(self.num_cols):
+            for j in range(self.fishnet_cols):
                 neighbor_indices = [
                     (i + ii, j + jj)
                     for ii in range(-1, 2)
@@ -287,7 +289,10 @@ class Fishnet:
                 neighbor_indices = [
                     (x, y)
                     for x, y in neighbor_indices
-                    if x >= 0 and x < self.num_rows and y >= 0 and y < self.num_cols
+                    if x >= 0
+                    and x < self.fishnet_rows
+                    and y >= 0
+                    and y < self.fishnet_cols
                 ]
                 neighbor_ids = [self.row_col_to_id(x, y) for x, y in neighbor_indices]
                 self.neighbors[self.row_col_to_id(i, j)] = neighbor_ids
@@ -510,7 +515,7 @@ class Fishnet:
                 df[feature1 + "-" + feature2] = df[feature1 + "-" + feature2] / 255
 
     def row_col_to_id(self, i, j):
-        return i * self.num_cols + j
+        return i * self.fishnet_cols + j
 
     # -------------------------------------------------------------------------- #
     #                          Harvesine Formula                                 #
