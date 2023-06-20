@@ -59,6 +59,7 @@ class Fishnet:
     # -------------------------------------------------------------------------- #
 
     def init_with_coordinates(self, coordinates):
+        self.clip = False
         self.shapefile = False
         self.xmin, self.ymin, self.xmax, self.ymax = coordinates
         self.crs = "EPSG:4326"
