@@ -132,11 +132,11 @@ class ImageProcessor:
             lambda row: self.mean_pixel_value(matrix, row["ImageCoordinates"]),
             axis=1,
         )
-        shannon_entropy = df.apply(
-            lambda row: self.shannon_entropy(matrix, row["ImageCoordinates"]), 
+        entropy = df.apply(
+            lambda row: self.entropy(matrix, row["ImageCoordinates"]), 
             axis=1
         )
-        return mean_pixel, shannon_entropy
+        return mean_pixel, entropy
 
     def mean_pixel_value(self, matrix: np.ndarray, bounds: list):
         xmin, ymin, xmax, ymax = bounds
@@ -144,7 +144,7 @@ class ImageProcessor:
         mean_value = np.mean(submatrix)
         return mean_value
     
-    def shannon_entropy(self, matrix: np.ndarray, bounds: list):
+    def entropy(self, matrix: np.ndarray, bounds: list):
         xmin, ymin, xmax, ymax = bounds
         submatrix = matrix[ymin:ymax, xmin:xmax]
         flat_submatrix = submatrix.ravel()

@@ -4,6 +4,7 @@ import numpy as np
 from prettytable import PrettyTable
 from tqdm import tqdm
 import sys
+from matplotlib import pyplot as plt
 
 
 class ImageCorrector:
@@ -100,7 +101,7 @@ class ImageCorrector:
             entry
             for entry in os.listdir(self.base_path)
             if os.path.isdir(os.path.join(self.base_path, entry))
-            and entry.startswith("export_")
+            # and entry.startswith("export_")
         ]
 
     def count_images(self, path):
@@ -131,8 +132,8 @@ class ImageCorrector:
             year_path = os.path.join(self.base_path, str(year), "Year")
             output_path = os.path.join(self.base_path, str(year), "Final")
 
-            summer_files = self.list_files(summer_path)
-            year_files = self.list_files(year_path)
+            summer_files = sorted(self.list_files(summer_path))
+            year_files = sorted(self.list_files(year_path))
 
             for summer_file, year_file in tqdm(
                 zip(summer_files, year_files),
@@ -146,6 +147,9 @@ class ImageCorrector:
                 if summer_img is None or year_img is None:
                     raise Exception("Error reading image.")
 
+                if summer_img.shape != year_img.shape:                   
+                    raise Exception("Images have different dimensions.")
+
                 result_img = np.where(summer_img == 0, year_img, summer_img)
 
                 # Save locally
@@ -154,7 +158,7 @@ class ImageCorrector:
     # @TO_OPTIMIZE
     def compute_color_pixels_proportion(self, path, color=[0, 0, 0]):
         total_pixels = 0
-        black_pixels = 0
+        color_pixels = 0
 
         files = self.list_files(path)
 
