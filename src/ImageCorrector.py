@@ -166,9 +166,9 @@ class ImageCorrector:
                 raise Exception("Error reading image.")
 
             total_pixels += np.size(img)
-            black_pixels += np.sum(img == color)
+            color_pixels += np.sum(img == color)
 
-        proportion = black_pixels / total_pixels if total_pixels > 0 else 0
+        proportion = color_pixels / total_pixels if total_pixels > 0 else 0
         return proportion
 
 
