@@ -85,13 +85,13 @@ class ImageProcessor:
         # Use the apply() method with axis=1 to apply the latlong_to_pixel function to each row
         image_coordinates = df.apply(
             lambda row: self.latlong_to_pixel(
-                self.batch_geometry, row["geometry"].bounds
+                self.batch_geometry, row["geometry"].bounds, row["id"]
             ),
             axis=1,
         )
         return image_coordinates
 
-    def latlong_to_pixel(self, batch_coords, tile_coords):
+    def latlong_to_pixel(self, batch_coords, tile_coords, id):
         min_lon, min_lat, max_lon, max_lat = batch_coords  # long/lat format
         xmin, ymin, xmax, ymax = tile_coords  # long/lat format
 
@@ -104,6 +104,7 @@ class ImageProcessor:
             or ymax < ymin
             or ymax > max_lat
         ):
+            print("Tile: ", id)
             print("Xmin: ", xmin)
             print("Xmax: ", xmax)
             print("Ymin: ", ymin)
