@@ -171,12 +171,15 @@ class Fishnet:
         # Convert batch tile size from miles to degrees
         self.batch_width_miles = self.batch_tile_size
         self.batch_height_miles = self.batch_tile_size
-        _, self.batch_width_degrees = self.miles_to_lat_lon_change(
-            self.ymin, self.xmin, self.batch_tile_size, 90
-        )
-        self.batch_height_degrees, _ = self.miles_to_lat_lon_change(
-            self.ymin, self.xmin, self.batch_tile_size, 0
-        )
+        self.batch_width_degrees = self.tile_width_degrees * (self.batch_width_miles / self.tile_width_miles)
+        self.batch_height_degrees = self.tile_height_degrees * (self.batch_height_miles / self.tile_height_miles)
+
+        #_, self.batch_width_degrees = self.miles_to_lat_lon_change(
+        #    self.ymin, self.xmin, self.batch_tile_size, 90
+        #)
+        #self.batch_height_degrees, _ = self.miles_to_lat_lon_change(
+        #    self.ymin, self.xmin, self.batch_tile_size, 0
+        #)
 
         # Calculate the number of rows and columns in the batched fishnet
         self.batch_cols = math.ceil(
