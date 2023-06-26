@@ -150,7 +150,7 @@ class ImageCorrector:
                 if summer_img.shape != year_img.shape:                   
                     raise Exception("Images have different dimensions.")
 
-                result_img = np.where(summer_img == 0, year_img, summer_img)
+                result_img = np.where(summer_img != 0, summer_img, year_img)
 
                 # Save locally
                 self.save_image(os.path.join(output_path, summer_file), result_img)
