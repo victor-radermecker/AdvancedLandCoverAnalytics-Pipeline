@@ -3,6 +3,7 @@ import numpy as np
 from tqdm.auto import tqdm
 import imageio
 from scipy.stats import entropy
+import cv2
 
 tqdm.pandas()
 
@@ -186,6 +187,7 @@ class ImageProcessor:
         image_folder,
         file_name,
         year,
+        img_size,
         warning=True,
         show_progress=True,
     ):
@@ -193,7 +195,7 @@ class ImageProcessor:
         # If the user says yes, continue, otherwise, stop the code
         if warning:
             answer = input(
-                "Warning, this code will create a new folder CNN in the /Image/ folder, which may take a lot of space on the hard drive. Continue? Yes or No?"
+                "Warning, this code will create a new folder CNN in the /image_folder/ folder, which may require consequent storage on the hard drive. Continue? Yes or No?"
             )
         else:
             answer = "Yes"
@@ -222,6 +224,9 @@ class ImageProcessor:
                         raise Exception(
                             f"Subimage {tile_id} in batch {batch_id} is too small. Please check the image and fishnet."
                         )
+
+                    # Crop image to img_size
+                    subimage = subimage[: img_size[0], : img_size[1]]
 
                     # check if the directory self.image_folder + 'CNN' exists, otherwise, create it
                     if not os.path.exists(image_folder + f"../../CNN/{year}/"):
