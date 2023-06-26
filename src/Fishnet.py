@@ -283,6 +283,14 @@ class Fishnet:
             total=self.fishnet_rows,
             desc="Computing neighbors...",
         ):
+
+            # up-left, up, up-right, left, right, down-left, down, down-right
+            position_name = {
+                (-1,-1): 'UL', (-1,0): 'U', (-1,1): 'UR', 
+                (0,-1): 'L', (0,1): 'R', 
+                (1,-1): 'DL', (1,0): 'D', (1,1): 'DR',
+            } 
+
             for j in range(self.fishnet_cols):
                 neighbor_indices = [
                     (i + ii, j + jj)
