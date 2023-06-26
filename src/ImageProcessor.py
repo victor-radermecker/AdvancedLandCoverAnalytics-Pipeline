@@ -51,7 +51,9 @@ class ImageProcessor:
             lambda x: x[3] - x[1]
         )
 
-    def compute_mean_tile_entropy_urbanization(self, image_folder, file_name, feature1_name, feature2_name):
+    def compute_mean_tile_entropy_urbanization(
+        self, image_folder, file_name, feature1_name, feature2_name
+    ):
         self.fishnet[feature1_name] = np.nan
         self.fishnet[feature2_name] = np.nan
 
@@ -75,9 +77,10 @@ class ImageProcessor:
                 self.fh.batches["batch_id"] == batch_id
             ]["geometry"].bounds.values[0]
 
-            temp_fishnet[feature1_name], temp_fishnet[feature2_name] = self.get_mean_pixel_entropy_values(
-                built_label, temp_fishnet
-            )
+            (
+                temp_fishnet[feature1_name],
+                temp_fishnet[feature2_name],
+            ) = self.get_mean_pixel_entropy_values(built_label, temp_fishnet)
 
             self.fishnet.update(temp_fishnet)
 
@@ -98,10 +101,10 @@ class ImageProcessor:
         # check if xmin > min_lon, xmax>xmin, xmax < max_lon, ymin > min_lat, ymax > ymin, ymax < max_lat
         if (
             xmin < min_lon
-            or xmax < xmin
+            #            or xmax < xmin
             or xmax > max_lon
             or ymin < min_lat
-            or ymax < ymin
+            #            or ymax < ymin
             or ymax > max_lat
         ):
             print("Tile: ", id)
@@ -134,8 +137,7 @@ class ImageProcessor:
             axis=1,
         )
         entropy = df.apply(
-            lambda row: self.entropy(matrix, row["ImageCoordinates"]), 
-            axis=1
+            lambda row: self.entropy(matrix, row["ImageCoordinates"]), axis=1
         )
         return mean_pixel, entropy
 
@@ -144,7 +146,7 @@ class ImageProcessor:
         submatrix = matrix[ymin:ymax, xmin:xmax]
         mean_value = np.mean(submatrix)
         return mean_value
-    
+
     def entropy(self, matrix: np.ndarray, bounds: list):
         xmin, ymin, xmax, ymax = bounds
         submatrix = matrix[ymin:ymax, xmin:xmax]
