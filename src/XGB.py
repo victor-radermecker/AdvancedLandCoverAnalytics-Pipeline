@@ -26,6 +26,12 @@ class XGB:
     self.df.drop(columns = to_drop, axis = 1, inplace = True)
 
 
+  #def neighbors_features(self):
+
+  # don't want to lose spatial relationship between the neighbors
+  # finish changing stuff in the fishnet class
+
+
     #def plot_results(self):
 
     

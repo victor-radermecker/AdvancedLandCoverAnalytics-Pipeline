@@ -278,22 +278,27 @@ class Fishnet:
     def compute_neighbors(self):
         self.neighbors = {}
 
+        # up-left, up, up-right, left, right, down-left, down, down-right
+        position_name = {
+            (-1,-1): 'UL', (-1,0): 'U', (-1,1): 'UR', 
+            (0,-1): 'L', (0,1): 'R', 
+            (1,-1): 'DL', (1,0): 'D', (1,1): 'DR',
+        } 
+
         for i in tqdm(
             range(self.fishnet_cols),
             total=self.fishnet_rows,
             desc="Computing neighbors...",
         ):
-
-            # up-left, up, up-right, left, right, down-left, down, down-right
-            position_name = {
-                (-1,-1): 'UL', (-1,0): 'U', (-1,1): 'UR', 
-                (0,-1): 'L', (0,1): 'R', 
-                (1,-1): 'DL', (1,0): 'D', (1,1): 'DR',
-            } 
-
             for j in range(self.fishnet_cols):
                 neighbor_indices = [
                     (i + ii, j + jj)
+                    for ii in range(-1, 2)
+                    for jj in range(-1, 2)
+                    if (ii != 0 or jj != 0)
+                ]
+                neighbor_position = [
+                    position_name[(ii, jj)]
                     for ii in range(-1, 2)
                     for jj in range(-1, 2)
                     if (ii != 0 or jj != 0)
@@ -306,7 +311,7 @@ class Fishnet:
                     and y >= 0
                     and y < self.fishnet_cols
                 ]
-                neighbor_ids = [self.row_col_to_id(x, y) for x, y in neighbor_indices]
+                neighbor_ids = {key:self.row_col_to_id(x, y) for key,(x, y) in zip(neighbor_position, neighbor_indices)}
                 self.neighbors[self.row_col_to_id(i, j)] = neighbor_ids
 
         # add neighbors to fishnet
@@ -421,7 +426,7 @@ class Fishnet:
         mean_y = (row["geometry"].bounds["miny"] + row["geometry"].bounds["maxy"]) / 2
 
         # find all neighbors
-        neighbors = self.fishnet[self.fishnet["id"].isin(list(row["neighbors"])[0])]
+        neighbors = self.fishnet[self.fishnet["id"].isin(list(row["neighbors"].values())[0])]
 
         # create empty map
         m = folium.Map(
