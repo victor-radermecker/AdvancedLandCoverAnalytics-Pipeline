@@ -15,6 +15,7 @@ from prettytable import PrettyTable
 # import seaborn as sns
 import folium
 from tqdm.contrib import tzip
+import matplotlib.cm as cm
 
 # import branca.colormap as cm
 from shapely.geometry import box
@@ -171,15 +172,19 @@ class Fishnet:
         # Convert batch tile size from miles to degrees
         self.batch_width_miles = self.batch_tile_size
         self.batch_height_miles = self.batch_tile_size
-        self.batch_width_degrees = self.tile_width_degrees * (self.batch_width_miles / self.tile_width_miles)
-        self.batch_height_degrees = self.tile_height_degrees * (self.batch_height_miles / self.tile_height_miles)
+        self.batch_width_degrees = self.tile_width_degrees * (
+            self.batch_width_miles / self.tile_width_miles
+        )
+        self.batch_height_degrees = self.tile_height_degrees * (
+            self.batch_height_miles / self.tile_height_miles
+        )
 
-        #_, self.batch_width_degrees = self.miles_to_lat_lon_change(
+        # _, self.batch_width_degrees = self.miles_to_lat_lon_change(
         #    self.ymin, self.xmin, self.batch_tile_size, 90
-        #)
-        #self.batch_height_degrees, _ = self.miles_to_lat_lon_change(
+        # )
+        # self.batch_height_degrees, _ = self.miles_to_lat_lon_change(
         #    self.ymin, self.xmin, self.batch_tile_size, 0
-        #)
+        # )
 
         # Calculate the number of rows and columns in the batched fishnet
         self.batch_cols = math.ceil(
@@ -401,6 +406,10 @@ class Fishnet:
             avg_lon = df["geometry"].apply(lambda x: x.centroid.x).mean()
             map = folium.Map(location=[avg_lat, avg_lon], zoom_start=11)
 
+            # Reverse the RdBu colormap
+            cmap = cm.get_cmap("RdBu")
+            reversed_cmap = cmap.reversed()
+
             choropleth = folium.Choropleth(
                 geo_data=geo,
                 name="choropleth",
@@ -408,7 +417,7 @@ class Fishnet:
                 columns=["id", feature],
                 key_on="feature.properties.id",
                 fill_opacity=0.7,
-                fill_color="YlOrRd",
+                fill_color="RdBu_r",
                 line_opacity=0.8,
                 legend_name=feature,
             )
