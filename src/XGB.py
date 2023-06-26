@@ -1,4 +1,5 @@
 import numpy as np
+from copy import deepcopy
 
 class XGB:
 
@@ -8,17 +9,17 @@ class XGB:
     """
     self.fishnet = fishnet
     if filtered:
-      self.df = fishnet.filtered_fishnet
+      self.df = deepcopy(fishnet.filtered_fishnet)
     else:
-      self.df = fishnet.fishnet
+      self.df = deepcopy(fishnet.fishnet)
 
-################################
-# CHECK AND SEE IF CAN IMPROVE #
-################################
+  ################################
+  # CHECK AND SEE IF CAN IMPROVE #
+  ################################
     
   def feature_engineering(self, yearStart, yearEnd):
-    self.years_range = range(yearStart, yearEnd)
-    for yr in self.years_range:
+    self.years_range = range(yearStart, yearEnd + 1)
+    for yr in self.years_range[:-1]:
       for feature in ["MeanPixel", "Entropy"]:
         if feature == "Entropy":
           if yr == self.years_range[-1]:
@@ -26,16 +27,14 @@ class XGB:
 
         yr_feature = np.array(self.df[f"{feature}_{yr}"])
         next_yr_feature = np.array(self.df[f"{feature}_{yr+1}"])
-        self.df[f"Delta1_{feature}_{yr}_{yr+1}"] = next_yr_feature - yr_feature
-        self.df[f"Delta2_mean_{yr}_{yr+1}"] = (next_yr_feature - yr_feature) / (next_yr_feature + yr_feature)
+        self.df[f"Δ{feature}_{yr}_{yr+1}"] = next_yr_feature - yr_feature
+        # XGB already non-linear
+        # self.df[f"Delta2_{feature}_{yr}_{yr+1}"] = (next_yr_feature - yr_feature) / (next_yr_feature + yr_feature)
 
   def remove_original_features(self):
     to_drop = []
     for yr in self.years_range:
       for feature in ["MeanPixel", "Entropy"]:
-        if feature == "Entropy":
-          if yr == self.years_range[-1]:
-            continue
         to_drop.append(f"{feature}_{yr}")
     self.df.drop(columns = to_drop, axis = 1, inplace = True)
 
