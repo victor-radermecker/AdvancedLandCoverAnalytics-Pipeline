@@ -426,7 +426,7 @@ class Fishnet:
         mean_y = (row["geometry"].bounds["miny"] + row["geometry"].bounds["maxy"]) / 2
 
         # find all neighbors
-        neighbors = self.fishnet[self.fishnet["id"].isin(list(row["neighbors"].values())[0])]
+        neighbors = self.fishnet[self.fishnet["id"].isin(list(list(row["neighbors"])[0].values()))]
 
         # create empty map
         m = folium.Map(
