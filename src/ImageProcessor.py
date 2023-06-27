@@ -209,7 +209,12 @@ class ImageProcessor:
             )
 
             for batch_id in progress_bar:
-                image_path = os.path.join(image_folder, f"{file_name}_{batch_id}.tif")
+                image_path = os.path.join(
+                    image_folder,
+                    f"export_{year}",
+                    "Final",
+                    f"{file_name}_{batch_id}.tif",
+                )
                 image = imageio.imread(image_path)
 
                 # extract all fishnet tile ids in the current batch
@@ -229,16 +234,16 @@ class ImageProcessor:
                     subimage = subimage[: img_size[0], : img_size[1]]
 
                     # check if the directory self.image_folder + 'CNN' exists, otherwise, create it
-                    if not os.path.exists(image_folder + f"../../CNN/{year}/"):
-                        os.makedirs(image_folder + f"../../CNN/{year}/")
+                    if not os.path.exists(image_folder + f"./CNN/{year}/"):
+                        os.makedirs(image_folder + f"./CNN/{year}/")
                         print(
                             "Directory ",
-                            image_folder + f"../CNN/{year}/",
+                            image_folder + f"./CNN/{year}/",
                             " Created ",
                         )
 
                     export_path = (
-                        image_folder + f"../../CNN/{year}/" + f"/{int(tile_id)}.tif"
+                        image_folder + f"./CNN/{year}/" + f"/{int(tile_id)}.tif"
                     )
                     imageio.imwrite(export_path, subimage)
 
