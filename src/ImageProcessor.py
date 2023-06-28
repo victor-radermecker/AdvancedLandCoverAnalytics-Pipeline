@@ -2,6 +2,7 @@ import os
 import numpy as np
 from tqdm.auto import tqdm
 import imageio
+from scipy.stats import entropy
 
 tqdm.pandas()
 
@@ -50,8 +51,9 @@ class ImageProcessor:
             lambda x: x[3] - x[1]
         )
 
-    def compute_mean_tile_urbanization(self, image_folder, file_name, feature_name):
-        self.fishnet[feature_name] = np.nan
+    def compute_mean_tile_entropy_urbanization(self, image_folder, file_name, feature1_name, feature2_name):
+        self.fishnet[feature1_name] = np.nan
+        self.fishnet[feature2_name] = np.nan
 
         for batch_id in tqdm(list(self.batch_ids), desc="Processing Images"):
             image_path = os.path.join(image_folder, f"{file_name}_{batch_id}.tif")
@@ -73,7 +75,7 @@ class ImageProcessor:
                 self.fh.batches["batch_id"] == batch_id
             ]["geometry"].bounds.values[0]
 
-            temp_fishnet[feature_name] = self.get_mean_pixel_value(
+            temp_fishnet[feature1_name], temp_fishnet[feature2_name] = self.get_mean_pixel_entropy_values(
                 built_label, temp_fishnet
             )
 
@@ -83,13 +85,13 @@ class ImageProcessor:
         # Use the apply() method with axis=1 to apply the latlong_to_pixel function to each row
         image_coordinates = df.apply(
             lambda row: self.latlong_to_pixel(
-                self.batch_geometry, row["geometry"].bounds
+                self.batch_geometry, row["geometry"].bounds, row["id"]
             ),
             axis=1,
         )
         return image_coordinates
 
-    def latlong_to_pixel(self, batch_coords, tile_coords):
+    def latlong_to_pixel(self, batch_coords, tile_coords, id):
         min_lon, min_lat, max_lon, max_lat = batch_coords  # long/lat format
         xmin, ymin, xmax, ymax = tile_coords  # long/lat format
 
@@ -102,6 +104,7 @@ class ImageProcessor:
             or ymax < ymin
             or ymax > max_lat
         ):
+            print("Tile: ", id)
             print("Xmin: ", xmin)
             print("Xmax: ", xmax)
             print("Ymin: ", ymin)
@@ -124,19 +127,31 @@ class ImageProcessor:
 
         return x_min_pixel, y_min_pixel, x_max_pixel, y_max_pixel
 
-    def get_mean_pixel_value(self, matrix, df):
-        # Use the apply() method with axis=1 to apply the latlong_to_pixel function to each row
+    def get_mean_pixel_entropy_values(self, matrix, df):
+        # Use the apply() method with axis=1 to apply the function to each row
         mean_pixel = df.apply(
             lambda row: self.mean_pixel_value(matrix, row["ImageCoordinates"]),
             axis=1,
         )
-        return mean_pixel
+        entropy = df.apply(
+            lambda row: self.entropy(matrix, row["ImageCoordinates"]), 
+            axis=1
+        )
+        return mean_pixel, entropy
 
     def mean_pixel_value(self, matrix: np.ndarray, bounds: list):
         xmin, ymin, xmax, ymax = bounds
         submatrix = matrix[ymin:ymax, xmin:xmax]
         mean_value = np.mean(submatrix)
         return mean_value
+    
+    def entropy(self, matrix: np.ndarray, bounds: list):
+        xmin, ymin, xmax, ymax = bounds
+        submatrix = matrix[ymin:ymax, xmin:xmax]
+        flat_submatrix = submatrix.ravel()
+        probabilities = np.bincount(flat_submatrix) / len(flat_submatrix)
+        entropy_value = entropy(probabilities, base=2)
+        return entropy_value
 
     def extract_label(self, image, color):
         red_pixels = np.all(
