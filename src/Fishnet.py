@@ -59,6 +59,7 @@ class Fishnet:
     # -------------------------------------------------------------------------- #
 
     def init_with_coordinates(self, coordinates):
+        self.clip = False
         self.shapefile = False
         self.xmin, self.ymin, self.xmax, self.ymax = coordinates
         self.crs = "EPSG:4326"
@@ -170,12 +171,15 @@ class Fishnet:
         # Convert batch tile size from miles to degrees
         self.batch_width_miles = self.batch_tile_size
         self.batch_height_miles = self.batch_tile_size
-        _, self.batch_width_degrees = self.miles_to_lat_lon_change(
-            self.ymin, self.xmin, self.batch_tile_size, 90
-        )
-        self.batch_height_degrees, _ = self.miles_to_lat_lon_change(
-            self.ymin, self.xmin, self.batch_tile_size, 0
-        )
+        self.batch_width_degrees = self.tile_width_degrees * (self.batch_width_miles / self.tile_width_miles)
+        self.batch_height_degrees = self.tile_height_degrees * (self.batch_height_miles / self.tile_height_miles)
+
+        #_, self.batch_width_degrees = self.miles_to_lat_lon_change(
+        #    self.ymin, self.xmin, self.batch_tile_size, 90
+        #)
+        #self.batch_height_degrees, _ = self.miles_to_lat_lon_change(
+        #    self.ymin, self.xmin, self.batch_tile_size, 0
+        #)
 
         # Calculate the number of rows and columns in the batched fishnet
         self.batch_cols = math.ceil(
@@ -274,12 +278,27 @@ class Fishnet:
     def compute_neighbors(self):
         self.neighbors = {}
 
+        # up-left, up, up-right, left, right, down-left, down, down-right
+        position_name = {
+            (-1,-1): 'UL', (-1,0): 'U', (-1,1): 'UR', 
+            (0,-1): 'L', (0,1): 'R', 
+            (1,-1): 'DL', (1,0): 'D', (1,1): 'DR',
+        } 
+
         for i in tqdm(
-            range(self.num_rows), total=self.num_rows, desc="Computing neighbors..."
+            range(self.fishnet_cols),
+            total=self.fishnet_rows,
+            desc="Computing neighbors...",
         ):
-            for j in range(self.num_cols):
+            for j in range(self.fishnet_cols):
                 neighbor_indices = [
                     (i + ii, j + jj)
+                    for ii in range(-1, 2)
+                    for jj in range(-1, 2)
+                    if (ii != 0 or jj != 0)
+                ]
+                neighbor_position = [
+                    position_name[(ii, jj)]
                     for ii in range(-1, 2)
                     for jj in range(-1, 2)
                     if (ii != 0 or jj != 0)
@@ -287,9 +306,12 @@ class Fishnet:
                 neighbor_indices = [
                     (x, y)
                     for x, y in neighbor_indices
-                    if x >= 0 and x < self.num_rows and y >= 0 and y < self.num_cols
+                    if x >= 0
+                    and x < self.fishnet_rows
+                    and y >= 0
+                    and y < self.fishnet_cols
                 ]
-                neighbor_ids = [self.row_col_to_id(x, y) for x, y in neighbor_indices]
+                neighbor_ids = {key:self.row_col_to_id(x, y) for key,(x, y) in zip(neighbor_position, neighbor_indices)}
                 self.neighbors[self.row_col_to_id(i, j)] = neighbor_ids
 
         # add neighbors to fishnet
@@ -309,38 +331,50 @@ class Fishnet:
     # -------------------------------------------------------------------------- #
 
     def plot_fishnet(self):
-        fig, ax = plt.subplots(figsize=(10, 10))
-        self.tx.plot(ax=ax, color="white", edgecolor="black")
-        # Plot the fishnet tiles
-        self.fishnet.plot(ax=ax, color="none", edgecolor="red")
-        # Plot the batch tiles
-        self.batches.plot(ax=ax, color="none", edgecolor="darkgreen", linewidth=3)
-        plt.show()
+        # Control the size of the fishnet before plotting
+        if self.fishnet_rows * self.fishnet_cols > 10000:
+            print(
+                "Can't plot filtered fishnet for more than 10,000 tiles. Please try with a smaller fishnet."
+            )
+        else:
+            fig, ax = plt.subplots(figsize=(10, 10))
+            self.tx.plot(ax=ax, color="white", edgecolor="black")
+            # Plot the fishnet tiles
+            self.fishnet.plot(ax=ax, color="none", edgecolor="red")
+            # Plot the batch tiles
+            self.batches.plot(ax=ax, color="none", edgecolor="darkgreen", linewidth=3)
+            plt.show()
 
     def plot_filtered_fishnet(self, zoom=False):
-        # check if self.filtered_fishnet exists
-        if not hasattr(self, "filtered_fishnet"):
+        # control the size of the fishnet before plotting
+        if self.fishnet_rows * self.fishnet_cols > 10000:
             print(
-                "No filtered fishnet found. Please run filter_fishnet_by_bbox() first."
+                "Can't plot filtered fishnet for more than 10,000 tiles. Please try with a smaller fishnet."
             )
-        fig, ax = plt.subplots(figsize=(10, 10))
-        self.tx.plot(ax=ax, color="white", edgecolor="black")
-        # Plot the fishnet tiles
-        self.filtered_fishnet.plot(ax=ax, color="none", edgecolor="red")
-        # Plot the batch tiles
-        self.filtered_batches.plot(
-            ax=ax, color="none", edgecolor="darkgreen", linewidth=3
-        )
-        if zoom:
-            ax.set_xlim(
-                self.filtered_batches.total_bounds[0],
-                self.filtered_batches.total_bounds[2],
+        else:
+            if not hasattr(self, "filtered_fishnet"):
+                print(
+                    "No filtered fishnet found. Please run filter_fishnet_by_bbox() first."
+                )
+
+            fig, ax = plt.subplots(figsize=(10, 10))
+            self.tx.plot(ax=ax, color="white", edgecolor="black")
+            # Plot the fishnet tiles
+            self.filtered_fishnet.plot(ax=ax, color="none", edgecolor="red")
+            # Plot the batch tiles
+            self.filtered_batches.plot(
+                ax=ax, color="none", edgecolor="darkgreen", linewidth=3
             )
-            ax.set_ylim(
-                self.filtered_batches.total_bounds[1],
-                self.filtered_batches.total_bounds[3],
-            )
-        plt.show()
+            if zoom:
+                ax.set_xlim(
+                    self.filtered_batches.total_bounds[0],
+                    self.filtered_batches.total_bounds[2],
+                )
+                ax.set_ylim(
+                    self.filtered_batches.total_bounds[1],
+                    self.filtered_batches.total_bounds[3],
+                )
+            plt.show()
 
     def plot_heatmap(self, feature, filtered, zoom=True):
         if filtered:
@@ -382,9 +416,9 @@ class Fishnet:
 
             return map
 
-    def plot_neighbor(self):
+    def plot_neighbor(self, id):
         # sample one random row from geodataframe
-        row = self.fishnet.sample()
+        row = self.fishnet[self.fishnet["id"] == id]
 
         # find coordinates of centroid of geometry
         # find map center
@@ -392,7 +426,7 @@ class Fishnet:
         mean_y = (row["geometry"].bounds["miny"] + row["geometry"].bounds["maxy"]) / 2
 
         # find all neighbors
-        neighbors = self.fishnet[self.fishnet["id"].isin(list(row["neighbors"])[0])]
+        neighbors = self.fishnet[self.fishnet["id"].isin(list(list(row["neighbors"])[0].values()))]
 
         # create empty map
         m = folium.Map(
@@ -419,6 +453,44 @@ class Fishnet:
         geo_j.add_to(m)
 
         return m
+
+    def plot_batch_tiles(self, batch_id):
+        # Select a batch by its ID
+        selected_batch = self.batches[self.batches["batch_id"] == batch_id]
+
+        # Select all tiles within the selected batch using the 'batch_id' field in `fishnet`
+        tiles_in_batch = self.fishnet[self.fishnet["batch_id"] == batch_id]
+
+        # Plot the selected batch
+        fig, ax = plt.subplots(figsize=(20, 20))
+        selected_batch.plot(ax=ax, color="blue", edgecolor="black")
+
+        # Plot the tiles within the selected batch on top
+        tiles_in_batch.plot(ax=ax, color="red", edgecolor="black")
+
+        # add the of id of the tile to the plot
+        for i, row in tiles_in_batch.iterrows():
+            ax.annotate(
+                row["id"],
+                (row["geometry"].centroid.x, row["geometry"].centroid.y),
+                size=10,
+                color="white",
+            )
+
+        plt.title("Batch and its tiles")
+
+    def plot_batch_tile(self, batch_id, tile_id):
+        # plot the union and intersection on the same plot
+        fig, ax = plt.subplots(figsize=(10, 10))
+
+        self.batches[self.batches["batch_id"] == batch_id].plot(
+            ax=ax, color="blue", edgecolor="black"
+        )
+        self.fishnet[self.fishnet["id"] == tile_id].plot(
+            ax=ax, color="red", edgecolor="black"
+        )
+
+        plt.show()
 
     # -------------------------------------------------------------------------- #
     #                               Utils                                        #
@@ -510,7 +582,7 @@ class Fishnet:
                 df[feature1 + "-" + feature2] = df[feature1 + "-" + feature2] / 255
 
     def row_col_to_id(self, i, j):
-        return i * self.num_cols + j
+        return i * self.fishnet_cols + j
 
     # -------------------------------------------------------------------------- #
     #                          Harvesine Formula                                 #
