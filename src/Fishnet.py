@@ -285,10 +285,15 @@ class Fishnet:
 
         # up-left, up, up-right, left, right, down-left, down, down-right
         position_name = {
-            (-1,-1): 'UL', (-1,0): 'U', (-1,1): 'UR', 
-            (0,-1): 'L', (0,1): 'R', 
-            (1,-1): 'DL', (1,0): 'D', (1,1): 'DR',
-        } 
+            (-1, -1): "UL",
+            (-1, 0): "U",
+            (-1, 1): "UR",
+            (0, -1): "L",
+            (0, 1): "R",
+            (1, -1): "DL",
+            (1, 0): "D",
+            (1, 1): "DR",
+        }
 
         for i in tqdm(
             range(self.fishnet_cols),
@@ -316,7 +321,10 @@ class Fishnet:
                     and y >= 0
                     and y < self.fishnet_cols
                 ]
-                neighbor_ids = {key:self.row_col_to_id(x, y) for key,(x, y) in zip(neighbor_position, neighbor_indices)}
+                neighbor_ids = {
+                    key: self.row_col_to_id(x, y)
+                    for key, (x, y) in zip(neighbor_position, neighbor_indices)
+                }
                 self.neighbors[self.row_col_to_id(i, j)] = neighbor_ids
 
         # add neighbors to fishnet
@@ -343,11 +351,13 @@ class Fishnet:
             )
         else:
             fig, ax = plt.subplots(figsize=(10, 10))
-            self.tx.plot(ax=ax, color="white", edgecolor="black")
             # Plot the fishnet tiles
             self.fishnet.plot(ax=ax, color="none", edgecolor="red")
             # Plot the batch tiles
             self.batches.plot(ax=ax, color="none", edgecolor="darkgreen", linewidth=3)
+            self.tx.plot(
+                ax=ax, facecolor="darkred", alpha=0.5, edgecolor="black", linewidth=1
+            )
             plt.show()
 
     def plot_filtered_fishnet(self, zoom=False):
@@ -363,13 +373,14 @@ class Fishnet:
                 )
 
             fig, ax = plt.subplots(figsize=(10, 10))
-            self.tx.plot(ax=ax, color="white", edgecolor="black")
             # Plot the fishnet tiles
             self.filtered_fishnet.plot(ax=ax, color="none", edgecolor="red")
             # Plot the batch tiles
             self.filtered_batches.plot(
                 ax=ax, color="none", edgecolor="darkgreen", linewidth=3
             )
+            # Plot the tx
+            self.tx.plot(ax=ax, color="white", edgecolor="black")
             if zoom:
                 ax.set_xlim(
                     self.filtered_batches.total_bounds[0],
@@ -435,7 +446,9 @@ class Fishnet:
         mean_y = (row["geometry"].bounds["miny"] + row["geometry"].bounds["maxy"]) / 2
 
         # find all neighbors
-        neighbors = self.fishnet[self.fishnet["id"].isin(list(list(row["neighbors"])[0].values()))]
+        neighbors = self.fishnet[
+            self.fishnet["id"].isin(list(list(row["neighbors"])[0].values()))
+        ]
 
         # create empty map
         m = folium.Map(
