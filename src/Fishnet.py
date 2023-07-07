@@ -145,6 +145,10 @@ class Fishnet:
         self.filtered_fishnet = self.fishnet[self.fishnet.intersects(bounding_box)]
         self.filtered_batches = self.batches[self.batches.intersects(bounding_box)]
 
+        # Create filtered_fishnet_cols and filtered_fishnet_rows
+        self.filtered_fishnet_cols = math.ceil((xmax - xmin) / self.tile_width_degrees)
+        self.filtered_fishnet_rows = math.ceil((ymax - ymin) / self.tile_height_degrees)
+
     # -------------------------------------------------------------------------- #
     #                              Batches                                       #
     # -------------------------------------------------------------------------- #
@@ -380,7 +384,7 @@ class Fishnet:
                 ax=ax, color="none", edgecolor="darkgreen", linewidth=3
             )
             # Plot the tx
-            self.tx.plot(ax=ax, color="white", edgecolor="black")
+            self.tx.plot(ax=ax, color="none", edgecolor="black")
             if zoom:
                 ax.set_xlim(
                     self.filtered_batches.total_bounds[0],
