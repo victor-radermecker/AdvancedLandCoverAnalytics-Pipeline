@@ -101,7 +101,7 @@ class ImageCorrector:
             entry
             for entry in os.listdir(self.base_path)
             if os.path.isdir(os.path.join(self.base_path, entry))
-            # and entry.startswith("export_")
+            and entry.startswith("export_")
         ]
 
     def count_images(self, path):
@@ -147,7 +147,7 @@ class ImageCorrector:
                 if summer_img is None or year_img is None:
                     raise Exception("Error reading image.")
 
-                if summer_img.shape != year_img.shape:                   
+                if summer_img.shape != year_img.shape:
                     raise Exception("Images have different dimensions.")
 
                 result_img = np.where(summer_img != 0, summer_img, year_img)

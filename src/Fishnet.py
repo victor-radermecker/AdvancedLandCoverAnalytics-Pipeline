@@ -146,8 +146,19 @@ class Fishnet:
         self.filtered_batches = self.batches[self.batches.intersects(bounding_box)]
 
         # Create filtered_fishnet_cols and filtered_fishnet_rows
-        self.filtered_fishnet_cols = math.ceil((xmax - xmin) / self.tile_width_degrees)
-        self.filtered_fishnet_rows = math.ceil((ymax - ymin) / self.tile_height_degrees)
+
+        # compute the width of the filtered fishnet area
+        L = (
+            self.filtered_fishnet["geometry"].bounds["maxx"].max()
+            - self.filtered_fishnet["geometry"].bounds["minx"].min()
+        )
+        H = (
+            self.filtered_fishnet["geometry"].bounds["maxy"].max()
+            - self.filtered_fishnet["geometry"].bounds["miny"].min()
+        )
+
+        self.filtered_fishnet_rows = int(H / self.tile_height_degrees)
+        self.filtered_fishnet_cols = int(L / self.tile_width_degrees)
 
     # -------------------------------------------------------------------------- #
     #                              Batches                                       #
@@ -540,10 +551,6 @@ class Fishnet:
 
     def batch_info(self):
         print("\nFishnet Batch has the following attributes: \n")
-        print(
-            "Number of tiles per batch: ",
-            int(self.batch_width_miles / self.tile_width_miles),
-        )
         table = PrettyTable()
         table.field_names = ["Metric", "Tiles", "Batches"]
         table.add_row(["Rows", self.fishnet_rows, self.batch_rows])
