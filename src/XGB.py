@@ -30,7 +30,8 @@ class XGB:
       for feature in ["MeanPixel", "Entropy"]:
         if feature == "Entropy" and yr == self.years_range[-1]:
             continue
-        self.df[f"Δ{feature}_{yr}_{yr+1}"] = self.df[f"{feature}_{yr}"] - self.df[f"{feature}_{yr+1}"]
+        normalization = 255 if feature == "MeanPixel" else 1
+        self.df[f"Δ{feature}_{yr}_{yr+1}"] = (self.df[f"{feature}_{yr}"] - self.df[f"{feature}_{yr+1}"]) / normalization
 
   def remove_original_features(self):
     to_drop = [f"{feature}_{yr}" for yr in self.years_range for feature in ["MeanPixel", "Entropy"]]
