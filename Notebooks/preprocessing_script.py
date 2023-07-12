@@ -7,6 +7,7 @@ BATCH_SIZE_MILES = 16
 FILTER_REGION = [-99.13, 28.91, -94.29, 31.1]
 IMG_DIR = "./Images2/"
 SAVE_DIR = "./Outputs"
+SHAPEFILE_PATH = "./Gis/Texas_State_Boundary/State.shp"
 
 # import modules
 import sys
@@ -40,7 +41,7 @@ if not os.path.exists(SAVE_DIR):
 fc = Fishnet(
     tile_size_miles=TILE_SIZE_MILES,
     coordinates=None,
-    shapefile_path="./Gis/Texas_State_Boundary/State.shp",
+    shapefile_path=SHAPEFILE_PATH,
     clip=False,
     overlay_method=None,
 )
