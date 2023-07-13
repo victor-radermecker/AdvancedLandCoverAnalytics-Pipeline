@@ -5,7 +5,7 @@
 TILE_SIZE_MILES = 0.25
 BATCH_SIZE_MILES = 16
 FILTER_REGION = [-99.13, 28.91, -94.29, 31.1]
-IMG_DIR = "./Images2/"
+IMG_DIR = "./Images3/"
 SAVE_DIR = "./Outputs"
 SHAPEFILE_PATH = "./Gis/Texas_State_Boundary/State.shp"
 
