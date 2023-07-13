@@ -6,7 +6,7 @@ TILE_SIZE_MILES = 0.25
 BATCH_SIZE_MILES = 16
 FILTER_REGION = [-99.13, 28.91, -94.29, 31.1]
 IMG_DIR = "./Images3/"
-SAVE_DIR = "./Outputs"
+SAVE_DIR = "./Outputs/"
 SHAPEFILE_PATH = "./Gis/Texas_State_Boundary/State.shp"
 
 # import modules
@@ -20,6 +20,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 # import local modules
+sys.path.append("./src")
 from Fishnet import Fishnet
 from ImageExporter import ImageExporter
 from ImageCorrector import ImageCorrector
@@ -78,4 +79,4 @@ for year in tqdm([2016, 2017, 2018, 2019, 2020, 2021, 2022]):
 #                                          SAVE RESULTS                                        ####
 ###################################################################################################
 
-fc.save("../Gis/Fishnet/fishnet_quarter_mile_completed.pkl")
+fc.save(f"{SAVE_DIR}fishnet_quarter_mile_completed.pkl")

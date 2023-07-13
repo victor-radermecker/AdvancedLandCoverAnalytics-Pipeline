@@ -54,10 +54,7 @@ Images/
 Images2/
 Gis/
 Notebooks/runs/
-<<<<<<< HEAD
 Notebooks/models/
 Notebooks/pretrained-models/
 Notebooks/logs/
-=======
-Notebooks/models/
->>>>>>> main
+Outputs
