@@ -128,8 +128,13 @@ class ImageCorrector:
     def correct_images(self):
         print("Imputing Summer missing pixels with Year data. Processing images...")
         for year in self.years:
+            # Input paths
             summer_path = os.path.join(self.base_path, str(year), "Summer")
             year_path = os.path.join(self.base_path, str(year), "Year")
+
+            # Output paths
+            if not os.path.exists(os.path.join(self.base_path, str(year), "Final")):
+                os.makedirs(os.path.join(self.base_path, str(year), "Final"))
             output_path = os.path.join(self.base_path, str(year), "Final")
 
             summer_files = sorted(self.list_files(summer_path))

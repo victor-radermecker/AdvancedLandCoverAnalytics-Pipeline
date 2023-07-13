@@ -87,5 +87,4 @@ for year in tqdm([2016, 2017, 2018, 2019, 2020, 2021, 2022]):
 
 timestamp = datetime.today().strftime("%Y-%m-%d")
 print("Data Processing Finished. Saving results...")
-fc.save(f"{SAVE_DIR}fishnet_quarter_mile_completed_{timestamp.}.pkl")
-
+fc.save(f"{SAVE_DIR}fishnet_quarter_mile_completed_{timestamp}.pkl")
