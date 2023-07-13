@@ -3,8 +3,13 @@
 ###################################################################################################
 
 TILE_SIZE_MILES = 0.25
-BATCH_SIZE_MILES = 16
-FILTER_REGION = [-99.13, 28.91, -94.29, 31.1]
+BATCH_SIZE_MILES = 16  # 16
+FILTER_REGION = [
+    -99.13,
+    28.91,
+    -94.29,
+    31.1,
+]  # [-95.799944, 29.374853, -95.028636, 29.795492,]
 IMG_DIR = "./Images3/"
 SAVE_DIR = "./Outputs/"
 SHAPEFILE_PATH = "./Gis/Texas_State_Boundary/State.shp"
@@ -13,6 +18,7 @@ SHAPEFILE_PATH = "./Gis/Texas_State_Boundary/State.shp"
 import sys
 import warnings
 import os
+from datetime import datetime
 
 warnings.filterwarnings("ignore")
 import ee
@@ -79,4 +85,7 @@ for year in tqdm([2016, 2017, 2018, 2019, 2020, 2021, 2022]):
 #                                          SAVE RESULTS                                        ####
 ###################################################################################################
 
-fc.save(f"{SAVE_DIR}fishnet_quarter_mile_completed.pkl")
+timestamp = datetime.today().strftime("%Y-%m-%d")
+print("Data Processing Finished. Saving results...")
+fc.save(f"{SAVE_DIR}fishnet_quarter_mile_completed_{timestamp.}.pkl")
+
