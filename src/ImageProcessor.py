@@ -93,6 +93,11 @@ class ImageProcessor:
             ),
             axis=1,
         )
+
+        # raise Error if image coordinates is nan
+        if image_coordinates.isna().any():
+            raise Exception("Error: Image coordinates are nan.")
+
         return image_coordinates
 
     def latlong_to_pixel(self, batch_coords, tile_coords, id):
