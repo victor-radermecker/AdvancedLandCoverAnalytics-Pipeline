@@ -5,8 +5,7 @@
 TILE_SIZE_MILES = 0.25
 BATCH_SIZE_MILES = 4
 FILTER_REGION = [-95.799944, 29.374853, -95.028636, 29.795492]
-IMG_DIR = "./Images3/
-"
+IMG_DIR = "./Images3/"
 
 # import modules
 import sys
