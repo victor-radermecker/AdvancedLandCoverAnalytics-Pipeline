@@ -142,6 +142,7 @@ class Fishnet:
         """
         xmin, ymin, xmax, ymax = bbox
         bounding_box = Polygon([(xmin, ymin), (xmax, ymin), (xmax, ymax), (xmin, ymax)])
+        self.filter_region = bbox
         self.filtered_fishnet = self.fishnet[self.fishnet.intersects(bounding_box)]
         self.filtered_batches = self.batches[self.batches.intersects(bounding_box)]
 
@@ -533,7 +534,7 @@ class Fishnet:
     #                               Utils                                        #
     # -------------------------------------------------------------------------- #
 
-    def fishnet_info(self):
+    def fishnet_info(self, return_=False):
         print("\n Fishnet Object has the following attributes: \n")
         table = PrettyTable()
         table.field_names = ["Metric", "Degrees", "Miles"]
@@ -548,8 +549,10 @@ class Fishnet:
             ["Tiles Height", self.tile_height_degrees, self.tile_height_miles]
         )
         print(table)
+        if return_:
+            return table
 
-    def batch_info(self):
+    def batch_info(self, return_=False):
         print("\nFishnet Batch has the following attributes: \n")
         table = PrettyTable()
         table.field_names = ["Metric", "Tiles", "Batches"]
@@ -563,6 +566,8 @@ class Fishnet:
             ]
         )
         print(table)
+        if return_:
+            return table
 
         table = PrettyTable()
         table.field_names = ["Metric", "Degrees", "Miles"]
