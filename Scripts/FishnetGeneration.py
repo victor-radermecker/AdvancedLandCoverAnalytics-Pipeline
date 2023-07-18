@@ -5,7 +5,7 @@
 TILE_SIZE_MILES = 0.25
 BATCH_SIZE_MILES = 4
 FILTER_REGION = [-95.799944, 29.374853, -95.028636, 29.795492]
-IMG_DIR = "./Images3/"
+IMG_DIR = "./Images2/"
 
 # import modules
 import sys
@@ -16,6 +16,7 @@ import ee
 from tqdm import tqdm
 
 # import local modules
+sys.path.append("./src")
 from Fishnet import Fishnet
 from ImageExporter import ImageExporter
 from ImageCorrector import ImageCorrector
@@ -56,4 +57,4 @@ for year in [2017, 2018, 2019, 2020, 2021, 2022]:
     )
 
 # Save result
-fc.save("./Gis/Fishnet/fishnet_quarter_mile_v2.pkl")
+fc.save("./Gis/Fishnet/fishnet_quarter_mile.pkl")
