@@ -5,14 +5,14 @@
 TILE_SIZE_MILES = 0.25
 BATCH_SIZE_MILES = 16  # 16
 FISHNET_PATH = "./Gis/Fishnet/fishnet_quarter_mile_v2.pkl"
-PERIODS = ["summer", "year"]
+PERIODS = ["summer"]  # ["summer", "year"]
 YEARS = [2016, 2017, 2018, 2019, 2020, 2021, 2022]
 
 SHAPEFILE_PATH = "./Gis/Texas_State_Boundary/State.shp"
 # OR
-COORDINATES = [-86.4466, 31.7655, -80.4437, 34.908]
+COORDINATES = [-84.8309, 33.3398, -83.1438, 34.0249]
 FILTER = False
-FILTER_REGION = [-86.4466, 31.7655, -80.4437, 34.908]
+FILTER_REGION = [-84.8309, 33.3398, -83.1438, 34.0249]
 
 ###################################################################################################
 #                                              PACKAGES                                       ####
