@@ -13,17 +13,21 @@ FILTER_REGION = [
 IMG_DIR = "./Images3/"
 SAVE_DIR = "./Outputs/"
 SHAPEFILE_PATH = "./Gis/Texas_State_Boundary/State.shp"
+FISHNET_PATH = "./Gis/Fishnet/fishnet_quarter_mile_v2.pkl"
+
+
+###################################################################################################
+#                                               PACKAGES                                       ####
+###################################################################################################
 
 # import modules
 import sys
 import warnings
 import os
 from datetime import datetime
+from tqdm import tqdm
 
 warnings.filterwarnings("ignore")
-import ee
-from tqdm import tqdm
-import matplotlib.pyplot as plt
 
 # import local modules
 sys.path.append("./src")
@@ -40,22 +44,35 @@ if not os.path.exists(SAVE_DIR):
     print(f"Creating directory {SAVE_DIR}.")
     os.makedirs(SAVE_DIR)
 
+
 ###################################################################################################
 #                                         FISHNET GENERATION                                   ####
 ###################################################################################################
 
 # Generate a fishnet using a shapefile
-fc = Fishnet(
-    tile_size_miles=TILE_SIZE_MILES,
-    coordinates=None,
-    shapefile_path=SHAPEFILE_PATH,
-    clip=False,
-    overlay_method=None,
+export_img = input(
+    "Are all images exported from Gogole Earth and stored locally? (y/n)"
 )
-fc.create_fishnet()
-fc.batch(BATCH_SIZE_MILES)
-fc.filter_fishnet_by_bbox(FILTER_REGION)
-fc.compute_neighbors()
+if export_img == "n":
+    raise Exception("Please export images from Google Earth Engine first.")
+
+generate_fishnet = input("Do you want to generate a new Fishnet? (y/n)")
+if generate_fishnet == "y":
+    fc = Fishnet(
+        tile_size_miles=TILE_SIZE_MILES,
+        coordinates=None,
+        shapefile_path=SHAPEFILE_PATH,
+        clip=False,
+        overlay_method=None,
+    )
+    fc.create_fishnet()
+    fc.batch(BATCH_SIZE_MILES)
+    fc.filter_fishnet_by_bbox(FILTER_REGION)
+    fc.compute_neighbors()
+else:
+    print("Loading Fishnet... From file: ", FISHNET_PATH, "\n")
+    fc = Fishnet.load(FISHNET_PATH)
+
 
 ###################################################################################################
 #                                  IMAGE CORRECTOR / PROCESSOR                                 ####
@@ -80,6 +97,7 @@ for year in tqdm([2016, 2017, 2018, 2019, 2020, 2021, 2022]):
         f"MeanPixel_{year}",
         f"Entropy_{year}",
     )
+
 
 ###################################################################################################
 #                                          SAVE RESULTS                                        ####

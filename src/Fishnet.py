@@ -44,6 +44,7 @@ class Fishnet:
         """
         self.tile_width_miles = tile_size_miles
         self.tile_height_miles = tile_size_miles
+        self.filtered = False
 
         # The user may provid only a Start point or only a Shapefile
         if coordinates is not None and shapefile_path is None:
@@ -141,6 +142,7 @@ class Fishnet:
         GeoDataFrame: A filtered GeoDataFrame containing only the bounding boxes within the larger bounding box.
         """
         xmin, ymin, xmax, ymax = bbox
+        self.filtered = True
         bounding_box = Polygon([(xmin, ymin), (xmax, ymin), (xmax, ymax), (xmin, ymax)])
         self.filter_region = bbox
         self.filtered_fishnet = self.fishnet[self.fishnet.intersects(bounding_box)]
@@ -347,11 +349,11 @@ class Fishnet:
         self.fishnet["neighbors"] = self.fishnet.apply(
             lambda row: self.neighbors[row["id"]], axis=1
         )
-
-        # add neighbors to filtered fishnet
-        self.filtered_fishnet["neighbors"] = self.filtered_fishnet.apply(
-            lambda row: self.neighbors[row["id"]], axis=1
-        )
+        if self.filtered:
+            # add neighbors to filtered fishnet
+            self.filtered_fishnet["neighbors"] = self.filtered_fishnet.apply(
+                lambda row: self.neighbors[row["id"]], axis=1
+            )
 
         print("All neighbors computed successfully.")
 
