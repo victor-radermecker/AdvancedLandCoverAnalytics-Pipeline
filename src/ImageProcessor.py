@@ -57,32 +57,32 @@ class ImageProcessor:
         self.fishnet[feature1_name] = np.nan
         self.fishnet[feature2_name] = np.nan
 
-        # for batch_id in tqdm(list(self.batch_ids), desc="Processing Images"):
-        #     image_path = os.path.join(image_folder, f"{file_name}_{batch_id}.tif")
-        #     image = imageio.imread(image_path)
-        #     if image is None:
-        #         raise Exception("Error reading image.")
+        for batch_id in tqdm(list(self.batch_ids), desc="Processing Images"):
+            image_path = os.path.join(image_folder, f"{file_name}_{batch_id}.tif")
+            image = imageio.imread(image_path)
+            if image is None:
+                raise Exception("Error reading image.")
 
-        #     # Extract image dimensions
-        #     self.img_height, self.img_width, _ = image.shape
+            # Extract image dimensions
+            self.img_height, self.img_width, _ = image.shape
 
-        #     # extract the "built" label
-        #     built_label = self.extract_label(
-        #         image, (196, 40, 27)
-        #     )  # Assuming "built" is represented by white pixels red #  [196  40  27] for red in DW
+            # extract the "built" label
+            built_label = self.extract_label(
+                image, (196, 40, 27)
+            )  # Assuming "built" is represented by white pixels red #  [196  40  27] for red in DW
 
-        #     temp_fishnet = self.fishnet[self.fishnet["batch_id"] == batch_id].copy()
+            temp_fishnet = self.fishnet[self.fishnet["batch_id"] == batch_id].copy()
 
-        #     self.batch_geometry = self.fh.batches.loc[
-        #         self.fh.batches["batch_id"] == batch_id
-        #     ]["geometry"].bounds.values[0]
+            self.batch_geometry = self.fh.batches.loc[
+                self.fh.batches["batch_id"] == batch_id
+            ]["geometry"].bounds.values[0]
 
-        #     (
-        #         temp_fishnet[feature1_name],
-        #         temp_fishnet[feature2_name],
-        #     ) = self.get_mean_pixel_entropy_values(built_label, temp_fishnet)
+            (
+                temp_fishnet[feature1_name],
+                temp_fishnet[feature2_name],
+            ) = self.get_mean_pixel_entropy_values(built_label, temp_fishnet)
 
-        #     self.fishnet.update(temp_fishnet)
+            self.fishnet.update(temp_fishnet)
 
     def get_pixel_coordinates(self, df):
         # Use the apply() method with axis=1 to apply the latlong_to_pixel function to each row
@@ -186,12 +186,12 @@ class ImageProcessor:
 
         return unique_colors
 
-    def generate_processed_csv(self, save_path, file_name):
+    def generate_processed_csv(self, save_path, file_name, filter):
         # Compute Urbanization Rate
         years = list(range(2016, 2023))
         for yr in years[1:]:
             self.fh.compute_difference(
-                f"MeanPixel_{yr}", f"MeanPixel_{yr-1}", filtered=True, normalize=True
+                f"MeanPixel_{yr}", f"MeanPixel_{yr-1}", filtered=filter, normalize=True
             )
 
         # rename MeanPixel_2017-MeanPixel_2016 to urbanization_rate_2016

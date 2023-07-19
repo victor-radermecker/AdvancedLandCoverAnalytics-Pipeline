@@ -144,7 +144,7 @@ class ImageCorrector:
 
             for summer_file, year_file in tqdm(
                 zip(summer_files, year_files),
-                desc=f"Processing images for year {year}",
+                desc=f"Correcting images for year {year}",
                 file=sys.stdout,
                 total=len(summer_files),
             ):

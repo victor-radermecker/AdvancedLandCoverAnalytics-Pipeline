@@ -4,29 +4,18 @@
 
 TILE_SIZE_MILES = 0.25
 BATCH_SIZE_MILES = 16  # 16
-IMG_DIR = "./Images/Valid"  # ./Archives/Images/
+IMG_DIR = "./Images/Train"  # ./Archives/Images/
 
 SAVE_DIR = "./Outputs/"
-FILE_NAME = "urbanization_valid"
+FILE_NAME = "urbanization_train"
 
 FISHNET_PATH = "./Gis/Fishnet/fishnet_quarter_mile_v2.pkl"
 # OR
 SHAPEFILE_PATH = "./Gis/Texas_State_Boundary/State.shp"
 # OR
-COORDINATES = [
-    -80.1731,
-    35.269,
-    -76.883,
-    36.8718,
-]  # [-87.1731, 32.769, -83.883, 34.3718]
-FILTER = False
-FILTER_REGION = [
-    -95.799944,
-    29.374853,
-    -95.028636,
-    29.795492,
-]  # [87.1731, 32.769, -83.883, 34.3718]
-# -99.13,28.91,-94.29,31.1]  # [-95.799944, 29.374853, -95.028636, 29.795492,]
+COORDINATES = [-99.13, 28.91, -94.29, 31.1]
+FILTER = True
+FILTER_REGION = [-99.13, 28.91, -94.29, 31.1]
 
 ###################################################################################################
 #                                               PACKAGES                                       ####
@@ -126,7 +115,7 @@ for year in tqdm([2016, 2017, 2018, 2019, 2020, 2021, 2022]):
     )
 
 if csv:
-    img_process.generate_processed_csv(SAVE_DIR, FILE_NAME)
+    img_process.generate_processed_csv(SAVE_DIR, FILE_NAME, FILTER)
 
 
 ###################################################################################################
