@@ -106,15 +106,15 @@ else:
 #                                  IMAGE CORRECTOR / PROCESSOR                                 ####
 ###################################################################################################
 
-corrector = ImageCorrector(IMG_DIR, verbose=False)
-corrector.correct_images()
+# corrector = ImageCorrector(IMG_DIR, verbose=False)
+# corrector.correct_images()
 
 img_process = ImageProcessor(
     fc,
     filtered=FILTER,
 )
 img_process.assign_fishnet_tiles_to_pixels(
-    IMG_DIR + f"{2016}/Final/", "landcover_batchID"
+    IMG_DIR + f"/{2016}/Final/", "landcover_batchID"
 )
 for year in tqdm([2016, 2017, 2018, 2019, 2020, 2021, 2022]):
     # Compute urbanization rate

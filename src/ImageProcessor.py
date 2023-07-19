@@ -57,32 +57,32 @@ class ImageProcessor:
         self.fishnet[feature1_name] = np.nan
         self.fishnet[feature2_name] = np.nan
 
-        for batch_id in tqdm(list(self.batch_ids), desc="Processing Images"):
-            image_path = os.path.join(image_folder, f"{file_name}_{batch_id}.tif")
-            image = imageio.imread(image_path)
-            if image is None:
-                raise Exception("Error reading image.")
+        # for batch_id in tqdm(list(self.batch_ids), desc="Processing Images"):
+        #     image_path = os.path.join(image_folder, f"{file_name}_{batch_id}.tif")
+        #     image = imageio.imread(image_path)
+        #     if image is None:
+        #         raise Exception("Error reading image.")
 
-            # Extract image dimensions
-            self.img_height, self.img_width, _ = image.shape
+        #     # Extract image dimensions
+        #     self.img_height, self.img_width, _ = image.shape
 
-            # extract the "built" label
-            built_label = self.extract_label(
-                image, (196, 40, 27)
-            )  # Assuming "built" is represented by white pixels red #  [196  40  27] for red in DW
+        #     # extract the "built" label
+        #     built_label = self.extract_label(
+        #         image, (196, 40, 27)
+        #     )  # Assuming "built" is represented by white pixels red #  [196  40  27] for red in DW
 
-            temp_fishnet = self.fishnet[self.fishnet["batch_id"] == batch_id].copy()
+        #     temp_fishnet = self.fishnet[self.fishnet["batch_id"] == batch_id].copy()
 
-            self.batch_geometry = self.fh.batches.loc[
-                self.fh.batches["batch_id"] == batch_id
-            ]["geometry"].bounds.values[0]
+        #     self.batch_geometry = self.fh.batches.loc[
+        #         self.fh.batches["batch_id"] == batch_id
+        #     ]["geometry"].bounds.values[0]
 
-            (
-                temp_fishnet[feature1_name],
-                temp_fishnet[feature2_name],
-            ) = self.get_mean_pixel_entropy_values(built_label, temp_fishnet)
+        #     (
+        #         temp_fishnet[feature1_name],
+        #         temp_fishnet[feature2_name],
+        #     ) = self.get_mean_pixel_entropy_values(built_label, temp_fishnet)
 
-            self.fishnet.update(temp_fishnet)
+        #     self.fishnet.update(temp_fishnet)
 
     def get_pixel_coordinates(self, df):
         # Use the apply() method with axis=1 to apply the latlong_to_pixel function to each row
@@ -190,40 +190,30 @@ class ImageProcessor:
         # Compute Urbanization Rate
         years = list(range(2016, 2023))
         for yr in years[1:]:
-            self.fishnet.compute_difference(
+            self.fh.compute_difference(
                 f"MeanPixel_{yr}", f"MeanPixel_{yr-1}", filtered=True, normalize=True
             )
 
         # rename MeanPixel_2017-MeanPixel_2016 to urbanization_rate_2016
         for yr in years[1:]:
-            self.fishnet.filtered_fishnet.rename(
+            self.fishnet.rename(
                 columns={f"MeanPixel_{yr}-MeanPixel_{yr-1}": f"urbanization_rate_{yr}"},
                 inplace=True,
             )
 
         for yr in years:
-            self.fishnet.filtered_fishnet.rename(
+            self.fishnet.rename(
                 columns={f"MeanPixel_{yr}": f"urbanization_{yr}"}, inplace=True
             )
 
-        self.fishnet.filtered_fishnet.rename(columns={"id": "tile_id"}, inplace=True)
-        self.fishnet.filtered_fishnet["tile_id"] = self.fishnet.filtered_fishnet[
-            "tile_id"
-        ].astype(int)
-        self.fishnet.filtered_fishnet["batch_id"] = self.fishnet.filtered_fishnet[
-            "batch_id"
-        ].astype(int)
+        self.fishnet.rename(columns={"id": "tile_id"}, inplace=True)
+        self.fishnet["tile_id"] = self.fishnet["tile_id"].astype(int)
+        self.fishnet["batch_id"] = self.fishnet["batch_id"].astype(int)
 
         # Extracting Lat Long coordinates
-        self.fishnet.filtered_fishnet["centroid"] = self.fishnet.filtered_fishnet[
-            "geometry"
-        ].apply(lambda x: x.centroid)
-        self.fishnet.filtered_fishnet["Lat"] = self.fishnet.filtered_fishnet[
-            "centroid"
-        ].apply(lambda x: x.y)
-        self.fishnet.filtered_fishnet["Lon"] = self.fishnet.filtered_fishnet[
-            "centroid"
-        ].apply(lambda x: x.x)
+        self.fishnet["centroid"] = self.fishnet["geometry"].apply(lambda x: x.centroid)
+        self.fishnet["Lat"] = self.fishnet["centroid"].apply(lambda x: x.y)
+        self.fishnet["Lon"] = self.fishnet["centroid"].apply(lambda x: x.x)
 
         vars1 = ["tile_id", "batch_id"] + [
             f"urbanization_rate_{year}" for year in range(2017, 2023)
@@ -232,14 +222,14 @@ class ImageProcessor:
             f"urbanization_{year}" for year in range(2016, 2023)
         ]
 
-        data = self.fishnet.filtered_fishnet[vars1].melt(
+        data = self.fishnet[vars1].melt(
             id_vars=["tile_id", "batch_id"],
             var_name="year",
             value_name="urbanization_rate",
         )
         data["year"] = data["year"].str[-4:]
         data["urbanization"] = (
-            self.fishnet.filtered_fishnet[vars2].melt(
+            self.fishnet[vars2].melt(
                 id_vars=["tile_id", "batch_id"],
                 var_name="year",
                 value_name="urbanization",
@@ -249,7 +239,7 @@ class ImageProcessor:
 
         # data['Lat'] is the latitude of the centroid of the tile in fc.filtered_fishnet['Lat'] joint
         data = data.merge(
-            self.fishnet.filtered_fishnet[["tile_id", "batch_id", "Lat", "Lon"]],
+            self.fishnet[["tile_id", "batch_id", "Lat", "Lon"]],
             on=["tile_id", "batch_id"],
         )
 
@@ -259,14 +249,14 @@ class ImageProcessor:
         # Save Metadata
         with open(save_path + file_name + ".txt", "w") as f:
             f.write("\n\nGeneral Fishnet Information:\n")
-            f.write(str(self.fishnet.fishnet_info(return_=True)) + "\n\n")
+            f.write(str(self.fh.fishnet_info(return_=True)) + "\n\n")
             f.write("\n\nGeneral Batch Information:\n")
-            f.write(str(self.fishnet.batch_info(return_=True)))
-            if self.fishnet.filtered:
+            f.write(str(self.fh.batch_info(return_=True)))
+            if self.fh.filtered:
                 f.write("\n\n\nGeneral Filter Information:")
-                f.write("\nFiltered region: " + str(self.fishnet.filter_region))
-                f.write("\nNumber of rows: " + str(self.fishnet.filtered_fishnet_rows))
-                f.write("\nNumber of cols: " + str(self.fishnet.filtered_fishnet_cols))
+                f.write("\nFiltered region: " + str(self.fh.filter_region))
+                f.write("\nNumber of rows: " + str(self.fh.filtered_fishnet_rows))
+                f.write("\nNumber of cols: " + str(self.fh.filtered_fishnet_cols))
 
     def cnn_partition_images(
         self,
