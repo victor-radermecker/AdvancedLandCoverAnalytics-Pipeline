@@ -3,7 +3,6 @@ import numpy as np
 from tqdm.auto import tqdm
 import imageio
 from scipy.stats import entropy
-import cv2
 
 tqdm.pandas()
 
@@ -94,7 +93,7 @@ class ImageProcessor:
             axis=1,
         )
 
-        # raise Error if image coordinates is nan
+        # raise Error if image coordinates is nan
         if image_coordinates.isna().any():
             raise Exception("Error: Image coordinates are nan.")
 
@@ -187,6 +186,88 @@ class ImageProcessor:
 
         return unique_colors
 
+    def generate_processed_csv(self, save_path, file_name):
+        # Compute Urbanization Rate
+        years = list(range(2016, 2023))
+        for yr in years[1:]:
+            self.fishnet.compute_difference(
+                f"MeanPixel_{yr}", f"MeanPixel_{yr-1}", filtered=True, normalize=True
+            )
+
+        # rename MeanPixel_2017-MeanPixel_2016 to urbanization_rate_2016
+        for yr in years[1:]:
+            self.fishnet.filtered_fishnet.rename(
+                columns={f"MeanPixel_{yr}-MeanPixel_{yr-1}": f"urbanization_rate_{yr}"},
+                inplace=True,
+            )
+
+        for yr in years:
+            self.fishnet.filtered_fishnet.rename(
+                columns={f"MeanPixel_{yr}": f"urbanization_{yr}"}, inplace=True
+            )
+
+        self.fishnet.filtered_fishnet.rename(columns={"id": "tile_id"}, inplace=True)
+        self.fishnet.filtered_fishnet["tile_id"] = self.fishnet.filtered_fishnet[
+            "tile_id"
+        ].astype(int)
+        self.fishnet.filtered_fishnet["batch_id"] = self.fishnet.filtered_fishnet[
+            "batch_id"
+        ].astype(int)
+
+        # Extracting Lat Long coordinates
+        self.fishnet.filtered_fishnet["centroid"] = self.fishnet.filtered_fishnet[
+            "geometry"
+        ].apply(lambda x: x.centroid)
+        self.fishnet.filtered_fishnet["Lat"] = self.fishnet.filtered_fishnet[
+            "centroid"
+        ].apply(lambda x: x.y)
+        self.fishnet.filtered_fishnet["Lon"] = self.fishnet.filtered_fishnet[
+            "centroid"
+        ].apply(lambda x: x.x)
+
+        vars1 = ["tile_id", "batch_id"] + [
+            f"urbanization_rate_{year}" for year in range(2017, 2023)
+        ]
+        vars2 = ["tile_id", "batch_id"] + [
+            f"urbanization_{year}" for year in range(2016, 2023)
+        ]
+
+        data = self.fishnet.filtered_fishnet[vars1].melt(
+            id_vars=["tile_id", "batch_id"],
+            var_name="year",
+            value_name="urbanization_rate",
+        )
+        data["year"] = data["year"].str[-4:]
+        data["urbanization"] = (
+            self.fishnet.filtered_fishnet[vars2].melt(
+                id_vars=["tile_id", "batch_id"],
+                var_name="year",
+                value_name="urbanization",
+            )["urbanization"]
+            / 255
+        )
+
+        # data['Lat'] is the latitude of the centroid of the tile in fc.filtered_fishnet['Lat'] joint
+        data = data.merge(
+            self.fishnet.filtered_fishnet[["tile_id", "batch_id", "Lat", "Lon"]],
+            on=["tile_id", "batch_id"],
+        )
+
+        # Save result
+        data.to_csv(save_path + file_name + ".csv", index=False)
+
+        # Save Metadata
+        with open(save_path + file_name + ".txt", "w") as f:
+            f.write("\n\nGeneral Fishnet Information:\n")
+            f.write(str(self.fishnet.fishnet_info(return_=True)) + "\n\n")
+            f.write("\n\nGeneral Batch Information:\n")
+            f.write(str(self.fishnet.batch_info(return_=True)))
+            if self.fishnet.filtered:
+                f.write("\n\n\nGeneral Filter Information:")
+                f.write("\nFiltered region: " + str(self.fishnet.filter_region))
+                f.write("\nNumber of rows: " + str(self.fishnet.filtered_fishnet_rows))
+                f.write("\nNumber of cols: " + str(self.fishnet.filtered_fishnet_cols))
+
     def cnn_partition_images(
         self,
         image_folder,
@@ -216,7 +297,7 @@ class ImageProcessor:
             for batch_id in progress_bar:
                 image_path = os.path.join(
                     image_folder,
-                    f"export_{year}",
+                    year,
                     "Final",
                     f"{file_name}_{batch_id}.tif",
                 )

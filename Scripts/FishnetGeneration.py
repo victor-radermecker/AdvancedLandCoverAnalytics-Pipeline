@@ -18,7 +18,6 @@ from tqdm import tqdm
 # import local modules
 sys.path.append("./src")
 from Fishnet import Fishnet
-from ImageExporter import ImageExporter
 from ImageCorrector import ImageCorrector
 from ImageProcessor import ImageProcessor
 
