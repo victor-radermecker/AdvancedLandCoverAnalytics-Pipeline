@@ -68,7 +68,7 @@ os.system("!earthengine authenticate")
 os.system('ee.Initialize(project="jpmorgancapstone"')
 
 ###################################################################################################
-#                                        GOOGLE EARTH ENGINE                                   ####
+#                                          START THE EXPORT                                    ####
 ###################################################################################################
 
 

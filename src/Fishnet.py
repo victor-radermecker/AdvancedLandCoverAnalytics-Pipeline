@@ -16,8 +16,6 @@ from prettytable import PrettyTable
 import folium
 from tqdm.contrib import tzip
 import matplotlib.cm as cm
-
-# import branca.colormap as cm
 from shapely.geometry import box
 from tqdm import tqdm
 
