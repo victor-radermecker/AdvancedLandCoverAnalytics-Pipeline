@@ -1,5 +1,5 @@
 import os
-import cv2
+from PIL import Image
 import numpy as np
 from prettytable import PrettyTable
 from tqdm import tqdm
@@ -121,10 +121,14 @@ class ImageCorrector:
         ]
 
     def read_image(self, path):
-        return cv2.imread(path, cv2.IMREAD_COLOR)
+        img = Image.open(path)
+        data = np.asarray(img, dtype="int32")
+        return data
 
     def save_image(self, path, img):
-        cv2.imwrite(path, img)
+        # save the image with PIL
+        im = Image.fromarray(img.astype("uint8"))
+        im.save(path)
 
     def correct_images(self):
         print("Imputing Summer missing pixels with Year data. Processing images...")
@@ -157,7 +161,7 @@ class ImageCorrector:
                 if summer_img.shape != year_img.shape:
                     raise Exception("Images have different dimensions.")
 
-                result_img = np.where(summer_img != 0, summer_img, year_img)
+                result_img = np.where(summer_img != [0, 0, 0], summer_img, year_img)
 
                 if int(year) > 2016:
                     previous_img = self.read_image(
@@ -165,7 +169,7 @@ class ImageCorrector:
                             self.base_path, str(int(year) - 1), "Final", summer_file
                         )
                     )
-                    result_img = self.discard_deurbanization(result_img, previous_img)
+                    result_img = self.discard_deurbanization(previous_img, result_img)
 
                 # Save locally
                 self.save_image(os.path.join(output_path, summer_file), result_img)
@@ -180,9 +184,9 @@ class ImageCorrector:
             print(f"Creating directory {final_path}.")
             os.makedirs(final_path)
 
-    def discard_deurbanization(self, result_img, previous_img):
+    def discard_deurbanization(self, previous_img, result_img):
         # avoid deurbanization in the data
-        return np.where(previous_img == [196, 40, 27], previous_img, result_img)
+        return np.where(previous_img != [196, 40, 27], result_img, previous_img)
 
     def extract_label(self, image, color):
         red_pixels = np.all(

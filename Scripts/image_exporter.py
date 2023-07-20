@@ -4,7 +4,7 @@
 
 TILE_SIZE_MILES = 0.25
 BATCH_SIZE_MILES = 16  # 16
-PERIODS = ["summer"]  # ["summer", "year"]
+PERIODS = ["summer", "year"]  # ["summer", "year"]
 YEARS = [2016, 2017, 2018, 2019, 2020, 2021, 2022]
 
 FISHNET_PATH = "./Gis/Fishnet/fishnet_quarter_mile_v2.pkl"

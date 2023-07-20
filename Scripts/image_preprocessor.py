@@ -13,7 +13,7 @@ FISHNET_PATH = "./Gis/Fishnet/fishnet_quarter_mile_v2.pkl"
 # OR
 SHAPEFILE_PATH = "./Gis/Texas_State_Boundary/State.shp"
 # OR
-COORDINATES = [-99.13, 28.91, -94.29, 31.1]
+COORDINATES = [-87.1731, 32.769, -83.883, 34.3718]
 FILTER = True
 FILTER_REGION = [-99.13, 28.91, -94.29, 31.1]
 
@@ -95,8 +95,8 @@ else:
 #                                  IMAGE CORRECTOR / PROCESSOR                                 ####
 ###################################################################################################
 
-# corrector = ImageCorrector(IMG_DIR, verbose=False)
-# corrector.correct_images()
+corrector = ImageCorrector(IMG_DIR, verbose=False)
+corrector.correct_images()
 
 img_process = ImageProcessor(
     fc,
