@@ -14,6 +14,7 @@ class SequenceDataLoader(Sequence):
         self,
         labels,
         list_IDs,  # regionIDs
+        target,
         tile_region_dic,  # each key: batchID and each value is a list of fishnet IDs
         fishnet_coordinates,  # each key: fishnetID, each value: image coordinates within the region of each fishnet
         image_dir,
@@ -34,6 +35,7 @@ class SequenceDataLoader(Sequence):
         """
         self.labels = labels
         self.list_IDs = list_IDs  # name of all batch_IDs
+        self.target = target
         self.tile_region_dic = tile_region_dic
         self.fishnet_coordinates = fishnet_coordinates
         self.image_dir = image_dir
@@ -70,14 +72,29 @@ class SequenceDataLoader(Sequence):
 
         # Generate data
         X = self._generate_X(list_IDs_temp)
+        y = self._generate_y(list_IDs_temp)
 
-        return X
+        return X, y
 
     def on_epoch_end(self):
         """Updates indexes after each epoch"""
         self.indexes = np.arange(len(self.list_IDs))
         if self.shuffle == True:
             np.random.shuffle(self.indexes)
+
+    def _generate_y(self, list_IDs_temp):
+        # Initialization
+        regionLengths = [len(self.tile_region_dic[ID]) for ID in list_IDs_temp]
+        y = np.empty(sum(regionLengths))
+
+        # Generate data
+        cursor = 0
+        for regionID in list_IDs_temp:
+            for fishnetID in self.tile_region_dic[regionID]:
+                y[cursor] = self.target[fishnetID]
+                cursor += 1
+
+        return y
 
     def _generate_X(self, list_IDs_temp):
         """Generates data containing batch_size images
@@ -86,11 +103,9 @@ class SequenceDataLoader(Sequence):
         :return: batch of images
         """
         # Initialization
-        # get the total number of fishnet IDS gathered from all the regions in this batch
-        # HEADS UP: Each region can have a different number of fishnets!
-
         regionLengths = [len(self.tile_region_dic[ID]) for ID in list_IDs_temp]
         X = np.empty((sum(regionLengths), len(self.labels), *self.dim, self.n_channels))
+
         # Generate data
         cursor = 0
         for i, ID in enumerate(list_IDs_temp):
@@ -125,7 +140,9 @@ class SequenceDataLoader(Sequence):
             for j, fishnetID in enumerate(fishnetIDs):
                 coordinates = self.fishnet_coordinates[fishnetID]
                 sub_img = self._crop_image(img, fishnetID, regionID, coordinates)
-                X[j, i, :, :, :] = np.array(sub_img)
+                X[j, i, :, :, :] = np.array(sub_img).reshape(
+                    self.dim[0], self.dim[1], self.n_channels
+                )
 
         return X
 
