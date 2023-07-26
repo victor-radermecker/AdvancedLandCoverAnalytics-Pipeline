@@ -52,9 +52,10 @@ if not os.path.exists(SAVE_DIR):
 
 csv = input("Do you want to save the final .CSV and Metadata files? (y/n)")
 split = input("Do you want to save each fishnet image into a new CNN/ directory? (y/n)")
-split_c = input(
-    "This will create a new CNN/ folder with one image per fishnet. Are you sure? (y/n)"
-)
+if split == "y":
+    split_c = input(
+        "This will create a new CNN/ folder with one image per fishnet. Are you sure? (y/n)"
+    )
 
 
 ###################################################################################################
