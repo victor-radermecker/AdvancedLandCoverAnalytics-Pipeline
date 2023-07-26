@@ -12,7 +12,7 @@ class SequenceDataLoader(Sequence):
     def __init__(
         self,
         labels,
-        list_IDs,  # batches. Right now, one batch will be one batch image
+        list_IDs,  # regionIDs
         tile_region_dic,  # each key: batchID and each value is a list of fishnet IDs
         fishnet_coordinates,  # each key: fishnetID, each value: image coordinates within the region of each fishnet
         image_dir,
@@ -53,6 +53,8 @@ class SequenceDataLoader(Sequence):
 
         :return: number of batches per epoch
         """
+        print(len(self.list_IDs))
+        print(self.batch_size)
         return int(np.floor(len(self.list_IDs) / self.batch_size))
 
     def __getitem__(self, index):
@@ -66,6 +68,7 @@ class SequenceDataLoader(Sequence):
 
         # Find list of IDs --> These are the batch_IDs that we want to load in this batch
         list_IDs_temp = [self.list_IDs[k] for k in indexes]
+        print("Loading batch: ", list_IDs_temp)
 
         # Generate data
         X = self._generate_X(list_IDs_temp)
@@ -89,7 +92,6 @@ class SequenceDataLoader(Sequence):
         # HEADS UP: Each region can have a different number of fishnets!
 
         RegionLengths = [len(self.tile_region_dic[ID]) for ID in list_IDs_temp]
-
         X = np.empty((sum(RegionLengths), len(self.labels), *self.dim, self.n_channels))
 
         # Generate data
