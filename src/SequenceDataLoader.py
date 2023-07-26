@@ -118,13 +118,14 @@ class SequenceDataLoader(Sequence):
                 f"{regionID}.tif",
             )
             img = Image.open(region_path)
-            img = img.convert("L")  # convert to grayscale
+            if self.n_channels == 1:
+                img = img.convert("L")  # convert to grayscale
             img = np.array(img) / 255.0
 
             for j, fishnetID in enumerate(fishnetIDs):
                 coordinates = self.fishnet_coordinates[fishnetID]
                 sub_img = self._crop_image(img, fishnetID, regionID, coordinates)
-                X[j, i, :, :, 0] = np.array(sub_img)
+                X[j, i, :, :, :] = np.array(sub_img)
 
         return X
 
