@@ -2,6 +2,7 @@ import numpy as np
 from PIL import Image, ImageOps
 from tensorflow.keras.utils import Sequence
 import os
+import imageio
 
 
 class SequenceDataLoader(Sequence):
@@ -53,8 +54,6 @@ class SequenceDataLoader(Sequence):
 
         :return: number of batches per epoch
         """
-        print(len(self.list_IDs))
-        print(self.batch_size)
         return int(np.floor(len(self.list_IDs) / self.batch_size))
 
     def __getitem__(self, index):
@@ -68,7 +67,6 @@ class SequenceDataLoader(Sequence):
 
         # Find list of IDs --> These are the batch_IDs that we want to load in this batch
         list_IDs_temp = [self.list_IDs[k] for k in indexes]
-        print("Loading batch: ", list_IDs_temp)
 
         # Generate data
         X = self._generate_X(list_IDs_temp)
@@ -91,14 +89,13 @@ class SequenceDataLoader(Sequence):
         # get the total number of fishnet IDS gathered from all the regions in this batch
         # HEADS UP: Each region can have a different number of fishnets!
 
-        RegionLengths = [len(self.tile_region_dic[ID]) for ID in list_IDs_temp]
-        X = np.empty((sum(RegionLengths), len(self.labels), *self.dim, self.n_channels))
-
+        regionLengths = [len(self.tile_region_dic[ID]) for ID in list_IDs_temp]
+        X = np.empty((sum(regionLengths), len(self.labels), *self.dim, self.n_channels))
         # Generate data
         cursor = 0
         for i, ID in enumerate(list_IDs_temp):
-            X[cursor : cursor + RegionLengths[i]] = self._load_region(ID)
-            cursor += RegionLengths[i]
+            X[cursor : cursor + regionLengths[i], :] = self._load_region(ID)
+            cursor += regionLengths[i]
 
         return X
 
@@ -110,26 +107,37 @@ class SequenceDataLoader(Sequence):
         fishnetIDs = self.tile_region_dic[regionID]
         N = len(fishnetIDs)
         X = np.empty(
-            (N, self.N_labels, *self.dim, self.n_channels)
+            (N, self.N_labels, self.dim[0], self.dim[1], self.n_channels)
         )  # dim [X, 6, 40, 44, 1]
 
         for i, label in enumerate(self.labels):
             region_path = os.path.join(
                 self.image_dir,
-                label,
+                str(label),
                 "Final",
                 f"{regionID}.tif",
             )
             img = Image.open(region_path)
             img = img.convert("L")  # convert to grayscale
+            img = np.array(img) / 255.0
 
             for j, fishnetID in enumerate(fishnetIDs):
                 coordinates = self.fishnet_coordinates[fishnetID]
-                img = img.crop(coordinates)
-                img = img.resize(self.dim)
-                X[j, i, :, :, 0] = np.array(img) / 255.0
+                sub_img = self._crop_image(img, fishnetID, regionID, coordinates)
+                X[j, i, :, :, 0] = np.array(sub_img)
 
         return X
+
+    def _crop_image(self, image, tile_id, batch_id, coordinates):
+        xmin, ymin, xmax, ymax = coordinates
+        subimage = image[ymin:ymax, xmin:xmax]
+
+        if subimage.shape[0] < 30 or subimage.shape[1] < 30:
+            raise Exception(
+                f"Subimage {tile_id} in batch {batch_id} is too small. Please check the image and fishnet."
+            )
+        subimage = subimage[: self.dim[0], : self.dim[1]]
+        return subimage
 
     ###################################################################################################
 
