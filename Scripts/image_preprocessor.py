@@ -4,17 +4,22 @@
 
 TILE_SIZE_MILES = 0.25
 BATCH_SIZE_MILES = 16  # 16
-IMG_DIR = "./Images/Train"  # ./Archives/Images/
+IMG_DIR = "./Images/Test"  # ./Archives/Images/
 
 SAVE_DIR = "./Outputs/"
-FILE_NAME = "urbanization_train"
+FILE_NAME = "urbanization_test"
 
 FISHNET_PATH = "./Gis/Fishnet/fishnet_quarter_mile_v2.pkl"
 # OR
 SHAPEFILE_PATH = "./Gis/Texas_State_Boundary/State.shp"
 # OR
-COORDINATES = [-87.1731, 32.769, -83.883, 34.3718]
-FILTER = True
+COORDINATES = [
+    -80.1731,
+    35.269,
+    -76.883,
+    36.8718,
+]  # [-87.1731, 32.769, -83.883, 34.3718]
+FILTER = False
 FILTER_REGION = [-99.13, 28.91, -94.29, 31.1]
 
 ###################################################################################################
@@ -46,6 +51,11 @@ if not os.path.exists(SAVE_DIR):
     os.makedirs(SAVE_DIR)
 
 csv = input("Do you want to save the final .CSV and Metadata files? (y/n)")
+split = input("Do you want to save each fishnet image into a new CNN/ directory? (y/n)")
+split_c = input(
+    "This will create a new CNN/ folder with one image per fishnet. Are you sure? (y/n)"
+)
+
 
 ###################################################################################################
 #                                         FISHNET GENERATION                                   ####
@@ -113,6 +123,20 @@ for year in tqdm([2016, 2017, 2018, 2019, 2020, 2021, 2022]):
         f"MeanPixel_{year}",
         f"Entropy_{year}",
     )
+
+if split == "y":
+    if split_c == "y":
+        for year in tqdm(
+            [2016, 2017, 2018, 2019, 2020, 2021, 2022], desc="Splitting..."
+        ):
+            img_process.cnn_partition_images(
+                image_folder=IMG_DIR,
+                file_name="landcover_batchID",
+                year=str(year),
+                img_size=[40, 44],
+                warning=False,
+                show_progress=False,
+            )
 
 if csv:
     img_process.generate_processed_csv(SAVE_DIR, FILE_NAME, FILTER)
