@@ -50,6 +50,7 @@ if not os.path.exists(SAVE_DIR):
     print(f"Creating directory {SAVE_DIR}.")
     os.makedirs(SAVE_DIR)
 
+correct = input("Do you want to correct the images? (y/n)")
 csv = input("Do you want to save the final .CSV and Metadata files? (y/n)")
 split = input("Do you want to save each fishnet image into a new CNN/ directory? (y/n)")
 if split == "y":
@@ -106,8 +107,9 @@ else:
 #                                  IMAGE CORRECTOR / PROCESSOR                                 ####
 ###################################################################################################
 
-corrector = ImageCorrector(IMG_DIR, verbose=False)
-corrector.correct_images()
+if correct == "y":
+    corrector = ImageCorrector(IMG_DIR, verbose=False)
+    corrector.correct_images()
 
 img_process = ImageProcessor(
     fc,

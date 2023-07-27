@@ -236,6 +236,7 @@ class ImageProcessor:
             )["urbanization"]
             / 255
         )
+        data["ImageCoordinates"] = self.fishnet["ImageCoordinates"]
 
         # data['Lat'] is the latitude of the centroid of the tile in fc.filtered_fishnet['Lat'] joint
         data = data.merge(

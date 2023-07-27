@@ -16,7 +16,7 @@ class SequenceDataLoader(Sequence):
         list_IDs,  # regionIDs
         target,
         tile_region_dic,  # each key: batchID and each value is a list of fishnet IDs
-        fishnet_coordinates,  # each key: fishnetID, each value: image coordinates within the region of each fishnet
+        tile_coordinates,  # each key: fishnetID, each value: image coordinates within the region of each fishnet
         image_dir,
         dim,
         batch_size=32,
@@ -37,7 +37,7 @@ class SequenceDataLoader(Sequence):
         self.list_IDs = list_IDs  # name of all batch_IDs
         self.target = target
         self.tile_region_dic = tile_region_dic
-        self.fishnet_coordinates = fishnet_coordinates
+        self.tile_coordinates = tile_coordinates
         self.image_dir = image_dir
         self.batch_size = batch_size
         self.dim = dim
@@ -48,7 +48,7 @@ class SequenceDataLoader(Sequence):
 
     def _init_params(self):
         self.N_regions = len(self.tile_region_dic)
-        self.N_fishnets = len(self.fishnet_coordinates)
+        self.N_fishnets = len(self.tile_coordinates)
         self.N_labels = len(self.labels)
 
     def __len__(self):
@@ -138,7 +138,7 @@ class SequenceDataLoader(Sequence):
             img = np.array(img) / 255.0
 
             for j, fishnetID in enumerate(fishnetIDs):
-                coordinates = self.fishnet_coordinates[fishnetID]
+                coordinates = self.tile_coordinates[fishnetID]
                 sub_img = self._crop_image(img, fishnetID, regionID, coordinates)
                 X[j, i, :, :, :] = np.array(sub_img).reshape(
                     self.dim[0], self.dim[1], self.n_channels
