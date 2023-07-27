@@ -9,7 +9,8 @@ sys.path.append("../src")
 from SequenceDataLoader import SequenceDataLoader
 
 
-def get_data_loader(df):
+# Data Preparation
+def get_data_loader(df, IMG_DIR, IMG_SIZE):
     labels = [2016, 2017, 2018, 2019, 2020, 2021, 2022]
     filename = "landcover_batchID_"
     list_IDs = [filename + str(s) for s in df["batch_id"].unique()]
@@ -36,6 +37,9 @@ def get_data_loader(df):
     for index, row in tqdm(data.iterrows(), total=data.shape[0]):
         fishnet_urbanization[int(row["tile_id"])] = row[TARGET]
 
+    # Get the coordinate of each fishnet within each region
+    # fishnet_coordinates = fishnet.fishnet["ImageCoordinates"]
+
     # Get the tiles coordinates
     YEAR = 2017
     TARGET = "ImageCoordinates"
@@ -45,10 +49,6 @@ def get_data_loader(df):
     for index, row in tqdm(data.iterrows(), total=data.shape[0]):
         tile_coordinates[int(row["tile_id"])] = row[TARGET]
 
-    # Other inputs
-    train_dir = "/content/drive/MyDrive/Code/Datasets/Test"
-    dim = (40, 44)
-
     # Initialize the SequenceDataLoader for training data
     data_loader = SequenceDataLoader(
         labels,
@@ -56,8 +56,8 @@ def get_data_loader(df):
         fishnet_urbanization,  # y: target variable
         tile_region_dic,
         tile_coordinates,
-        train_dir,
-        dim=dim,
+        IMG_DIR,
+        dim=IMG_SIZE,
         batch_size=1,
         n_channels=1,
         shuffle=True,
