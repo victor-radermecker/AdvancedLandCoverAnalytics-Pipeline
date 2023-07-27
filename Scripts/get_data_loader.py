@@ -10,7 +10,7 @@ from SequenceDataLoader import SequenceDataLoader
 
 
 # Data Preparation
-def get_data_loader(df, IMG_DIR, IMG_SIZE):
+def get_data_loader(df, IMG_DIR, IMG_SIZE, BATCH_SIZE, N_CHANNELS):
     labels = [2016, 2017, 2018, 2019, 2020, 2021, 2022]
     filename = "landcover_batchID_"
     list_IDs = [filename + str(s) for s in df["batch_id"].unique()]
@@ -58,8 +58,8 @@ def get_data_loader(df, IMG_DIR, IMG_SIZE):
         tile_coordinates,
         IMG_DIR,
         dim=IMG_SIZE,
-        batch_size=1,
-        n_channels=1,
+        batch_size=BATCH_SIZE,
+        n_channels=N_CHANNELS,
         shuffle=True,
     )
 

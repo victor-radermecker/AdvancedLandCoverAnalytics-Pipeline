@@ -22,6 +22,7 @@ class SequenceDataLoader(Sequence):
         batch_size=32,
         n_channels=1,
         shuffle=True,
+        num_sub_batches_per_region=4,  # Set the desired number of sub-batches per region
     ):
         """Initialization
 
@@ -43,6 +44,7 @@ class SequenceDataLoader(Sequence):
         self.dim = dim
         self.n_channels = n_channels
         self.shuffle = shuffle
+        self.num_sub_batches_per_region = num_sub_batches_per_region
         self._init_params()
         self.on_epoch_end()
 
@@ -56,7 +58,8 @@ class SequenceDataLoader(Sequence):
 
         :return: number of batches per epoch
         """
-        return int(np.floor(len(self.list_IDs) / self.batch_size))
+        self.nbr_batches = int(np.ceil(len(self.tile_coordinates) / self.batch_size))
+        return self.nbr_batches
 
     def __getitem__(self, index):
         """Generate one batch of data
@@ -65,62 +68,103 @@ class SequenceDataLoader(Sequence):
         :return: X and y when fitting. X only when predicting
         """
         # Generate indexes of the batch
-        indexes = self.indexes[index * self.batch_size : (index + 1) * self.batch_size]
+        # indexes = self.tile_indexes[
+        #     index * self.batch_size : (index + 1) * self.batch_size
+        # ]
 
         # Find list of IDs --> These are the batch_IDs that we want to load in this batch
-        list_IDs_temp = [self.list_IDs[k] for k in indexes]
+        # list_IDs_temp = [self.list_IDs[k] for k in indexes]
+
+        batch = self.batches[index]
 
         # Generate data
-        X = self._generate_X(list_IDs_temp)
-        y = self._generate_y(list_IDs_temp)
+        X = self._generate_X(batch)
+        y = self._generate_y(batch)
 
         return X, y
 
     def on_epoch_end(self):
         """Updates indexes after each epoch"""
-        self.indexes = np.arange(len(self.list_IDs))
+        self.region_indexes = np.arange(len(self.list_IDs))
         if self.shuffle == True:
-            np.random.shuffle(self.indexes)
+            np.random.shuffle(self.region_indexes)
+        self.create_batches()
 
-    def _generate_y(self, list_IDs_temp):
+    def create_batches(self):
+        """
+        Create batches of tiles for each region based on a specified batch size.
+
+        This method generates a list of batches, where each batch is a dictionary with
+        region IDs as keys and lists of corresponding tiles as values. Each tile ID
+        appears only once across all the batches. The method iterates through the
+        specified region IDs in the order provided in 'region_indexes' and assigns
+        tiles to each region until a batch reaches the maximum batch size.
+
+        Returns:
+            None: The method stores the generated list of batches in 'self.batches'.
+        """
+        batches = []
+        current_batch = {}
+        current_batch_size = 0
+
+        for region_id in self.region_indexes:
+            key = "landcover_batchID_" + str(region_id)
+            tiles = self.tile_region_dic[key]
+
+            for tile_id in tiles:
+                if tile_id not in current_batch.values():
+                    current_batch.setdefault(key, []).append(tile_id)
+                    current_batch_size += 1
+
+                    if current_batch_size >= self.batch_size:
+                        batches.append(current_batch)
+                        current_batch = {}
+                        current_batch_size = 0
+
+        if current_batch:
+            batches.append(current_batch)
+
+        print("Success. Completed creating batches.")
+        self.batches = batches
+
+    def _generate_y(self, batch):
         # Initialization
-        regionLengths = [len(self.tile_region_dic[ID]) for ID in list_IDs_temp]
+        regionLengths = [len(v) for v in batch.values()]
         y = np.empty(sum(regionLengths))
 
         # Generate data
         cursor = 0
-        for regionID in list_IDs_temp:
-            for fishnetID in self.tile_region_dic[regionID]:
-                y[cursor] = self.target[fishnetID]
+        for regionID, tileIDs in batch.items():
+            for tileID in tileIDs:
+                y[cursor] = self.target[tileID]
                 cursor += 1
 
         return y
 
-    def _generate_X(self, list_IDs_temp):
+    def _generate_X(self, batch):
         """Generates data containing batch_size images
 
         :param list_IDs_temp: list of label ids to load
         :return: batch of images
         """
-        # Initialization
-        regionLengths = [len(self.tile_region_dic[ID]) for ID in list_IDs_temp]
-        X = np.empty((sum(regionLengths), len(self.labels), *self.dim, self.n_channels))
+        # [len(self.tile_region_dic[ID]) for ID in list_IDs_temp]
+        X = np.empty((self.batch_size, len(self.labels), *self.dim, self.n_channels))
 
         # Generate data
         cursor = 0
-        for i, ID in enumerate(list_IDs_temp):
-            X[cursor : cursor + regionLengths[i], :] = self._load_region(ID)
-            cursor += regionLengths[i]
+        for regionID, tileIDs in batch.items():
+            X[cursor : cursor + len(tileIDs), :] = self._load_region(regionID, tileIDs)
+            cursor += len(tileIDs)
 
         return X
 
-    def _load_region(self, regionID):
+    def _load_region(self, regionID, tileIDs):
         """
         Load a region from the image directory
         """
         # N is the number of fishnet in that region
-        fishnetIDs = self.tile_region_dic[regionID]
-        N = len(fishnetIDs)
+        # fishnetIDs = self.tile_region_dic[regionID]
+        N = len(tileIDs)
         X = np.empty(
             (N, self.N_labels, self.dim[0], self.dim[1], self.n_channels)
         )  # dim [X, 6, 40, 44, 1]
@@ -137,9 +181,9 @@ class SequenceDataLoader(Sequence):
                 img = img.convert("L")  # convert to grayscale
             img = np.array(img) / 255.0
 
-            for j, fishnetID in enumerate(fishnetIDs):
-                coordinates = self.tile_coordinates[fishnetID]
-                sub_img = self._crop_image(img, fishnetID, regionID, coordinates)
+            for j, tileID in enumerate(tileIDs):
+                coordinates = self.tile_coordinates[tileID]
+                sub_img = self._crop_image(img, tileID, regionID, coordinates)
                 X[j, i, :, :, :] = np.array(sub_img).reshape(
                     self.dim[0], self.dim[1], self.n_channels
                 )
