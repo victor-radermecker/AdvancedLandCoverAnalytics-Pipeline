@@ -22,7 +22,6 @@ class SequenceDataLoader(Sequence):
         batch_size=32,
         n_channels=1,
         shuffle=True,
-        num_sub_batches_per_region=4,  # Set the desired number of sub-batches per region
     ):
         """Initialization
 
@@ -44,7 +43,6 @@ class SequenceDataLoader(Sequence):
         self.dim = dim
         self.n_channels = n_channels
         self.shuffle = shuffle
-        self.num_sub_batches_per_region = num_sub_batches_per_region
         self._init_params()
         self.on_epoch_end()
 
@@ -148,7 +146,8 @@ class SequenceDataLoader(Sequence):
         :return: batch of images
         """
         # [len(self.tile_region_dic[ID]) for ID in list_IDs_temp]
-        X = np.empty((self.batch_size, len(self.labels), *self.dim, self.n_channels))
+        regionLengths = [len(v) for v in batch.values()]
+        X = np.empty((sum(regionLengths), len(self.labels), *self.dim, self.n_channels))
 
         # Generate data
         cursor = 0
