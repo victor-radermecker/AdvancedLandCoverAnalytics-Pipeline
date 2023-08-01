@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from PIL import Image, ImageOps
 from tensorflow.keras.utils import Sequence
 import os
@@ -22,7 +23,7 @@ class SequenceDataLoader(Sequence):
         batch_size=32,
         n_channels=1,
         shuffle=True,
-        num_sub_batches_per_region=4,  # Set the desired number of sub-batches per region
+        tab_data=None,
     ):
         """Initialization
 
@@ -44,9 +45,9 @@ class SequenceDataLoader(Sequence):
         self.dim = dim
         self.n_channels = n_channels
         self.shuffle = shuffle
-        self.num_sub_batches_per_region = num_sub_batches_per_region
         self._init_params()
         self.on_epoch_end()
+        self.tab_data = tab_data
 
     def _init_params(self):
         self.N_regions = len(self.tile_region_dic)
@@ -80,6 +81,9 @@ class SequenceDataLoader(Sequence):
         # Generate data
         X = self._generate_X(batch)
         y = self._generate_y(batch)
+
+        if self.tab_data is not None:
+          X = (X, self._generate_X_tab(batch))
 
         return X, y
 
@@ -148,7 +152,8 @@ class SequenceDataLoader(Sequence):
         :return: batch of images
         """
         # [len(self.tile_region_dic[ID]) for ID in list_IDs_temp]
-        X = np.empty((self.batch_size, len(self.labels), *self.dim, self.n_channels))
+        regionLengths = [len(v) for v in batch.values()]
+        X = np.empty((sum(regionLengths), len(self.labels), *self.dim, self.n_channels))
 
         # Generate data
         cursor = 0
@@ -157,6 +162,16 @@ class SequenceDataLoader(Sequence):
             cursor += len(tileIDs)
 
         return X
+
+    def _generate_X_tab(self, batch):
+
+        X_tab = pd.DataFrame()
+        for regionID, tileIDs in batch.items():
+          for ID in tileIDs:
+            X_tab = X_tab.append(self.tab_data[ID], ignore_index=True)
+
+        return X_tab
+              
 
     def _load_region(self, regionID, tileIDs):
         """
