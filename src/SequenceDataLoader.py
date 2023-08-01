@@ -23,7 +23,10 @@ class SequenceDataLoader(Sequence):
         batch_size=32,
         n_channels=1,
         shuffle=True,
+<<<<<<< HEAD
         tab_data=None,
+=======
+>>>>>>> f9cfa9bca197adf1deefa965726051be1ee79e4c
     ):
         """Initialization
 

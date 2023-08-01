@@ -4,20 +4,20 @@
 
 TILE_SIZE_MILES = 0.25
 BATCH_SIZE_MILES = 16  # 16
-IMG_DIR = "./Images/Test"  # ./Archives/Images/
+IMG_DIR = "./Images/Valid"  # ./Archives/Images/
 
 SAVE_DIR = "./Outputs/"
-FILE_NAME = "urbanization_test"
+FILE_NAME = "urbanization_valid"
 
 FISHNET_PATH = "./Gis/Fishnet/fishnet_quarter_mile_v2.pkl"
 # OR
 SHAPEFILE_PATH = "./Gis/Texas_State_Boundary/State.shp"
 # OR
 COORDINATES = [
-    -80.1731,
-    35.269,
-    -76.883,
-    36.8718,
+    -87.1731,
+    32.769,
+    -83.883,
+    34.3718,
 ]  # [-87.1731, 32.769, -83.883, 34.3718]
 FILTER = False
 FILTER_REGION = [-99.13, 28.91, -94.29, 31.1]
