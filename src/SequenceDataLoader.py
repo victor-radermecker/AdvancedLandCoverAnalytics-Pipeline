@@ -23,10 +23,7 @@ class SequenceDataLoader(Sequence):
         batch_size=32,
         n_channels=1,
         shuffle=True,
-<<<<<<< HEAD
         tab_data=None,
-=======
->>>>>>> f9cfa9bca197adf1deefa965726051be1ee79e4c
     ):
         """Initialization
 
@@ -86,7 +83,7 @@ class SequenceDataLoader(Sequence):
         y = self._generate_y(batch)
 
         if self.tab_data is not None:
-          X = (X, self._generate_X_tab(batch))
+            X = (X, self._generate_X_tab(batch))
 
         return X, y
 
@@ -167,14 +164,12 @@ class SequenceDataLoader(Sequence):
         return X
 
     def _generate_X_tab(self, batch):
-
         X_tab = pd.DataFrame()
         for regionID, tileIDs in batch.items():
-          for ID in tileIDs:
-            X_tab = X_tab.append(self.tab_data[ID], ignore_index=True)
+            for ID in tileIDs:
+                X_tab = X_tab.append(self.tab_data[ID], ignore_index=True)
 
         return X_tab
-              
 
     def _load_region(self, regionID, tileIDs):
         """

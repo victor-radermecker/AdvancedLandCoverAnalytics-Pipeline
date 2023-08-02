@@ -9,7 +9,9 @@ IMG_DIR = "./Images/Train"  # ./Archives/Images/
 SAVE_DIR = "./Outputs/"
 FILE_NAME = "urbanization_train"
 
-FISHNET_PATH = "./Gis/Fishnet/fishnet_quarter_mile_v2.pkl"
+FISHNET_PATH = (
+    "./Outputs/Train/fishnet_train.pkl"  # "./Gis/Fishnet/fishnet_quarter_mile_v2.pkl"
+)
 # OR
 SHAPEFILE_PATH = "./Gis/Texas_State_Boundary/State.shp"
 # OR
