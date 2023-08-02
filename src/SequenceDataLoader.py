@@ -167,7 +167,8 @@ class SequenceDataLoader(Sequence):
         X_tab = pd.DataFrame()
         for regionID, tileIDs in batch.items():
             for ID in tileIDs:
-                X_tab = X_tab.append(self.tab_data[ID], ignore_index=True)
+                # X_tab = X_tab.append(self.tab_data[ID], ignore_index=True)
+                X_tab = pd.concat([X_tab, self.tab_data.iloc[ID]], ignore_index=True)
 
         return X_tab
 
