@@ -10,9 +10,8 @@ from SequenceDataLoader import SequenceDataLoader
 
 
 # Data Preparation
-def get_data_loader(
-    df, IMG_DIR, IMG_SIZE, BATCH_SIZE, N_CHANNELS, LABELS, tab_data=None
-):
+def get_data_loader(df, IMG_DIR, IMG_SIZE, BATCH_SIZE, N_CHANNELS, tab_data=None):
+    labels = [2016, 2017, 2018, 2019, 2020, 2021, 2022]
     filename = "landcover_batchID_"
     list_IDs = [filename + str(s) for s in df["batch_id"].unique()]
 
@@ -52,7 +51,7 @@ def get_data_loader(
 
     # Initialize the SequenceDataLoader for training data
     data_loader = SequenceDataLoader(
-        LABELS,
+        labels,
         list_IDs,
         fishnet_urbanization,  # y: target variable
         tile_region_dic,
