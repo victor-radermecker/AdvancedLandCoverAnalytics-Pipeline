@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from PIL import Image, ImageOps
 from tensorflow.keras.utils import Sequence
+import tensorflow as tf
 import os
 import imageio
 
@@ -164,12 +165,13 @@ class SequenceDataLoader(Sequence):
         return X
 
     def _generate_X_tab(self, batch):
-        X_tab = pd.DataFrame()
+        X_tab = pd.DataFrame(columns = [2017,2018,2019,2020,2021,'Lat', 'Lon'])
         for regionID, tileIDs in batch.items():
             for ID in tileIDs:
-                X_tab = X_tab.append(self.tab_data[ID], ignore_index=True)
-
-        return X_tab
+                X_tab.loc[len(X_tab)] = self.tab_data.iloc[ID]
+                # X_tab = pd.concat([X_tab, ], ignore_index=True, axis=0) #X_tab.append(self.tab_data[ID], ignore_index=True)
+                # X_tab = X_tab.append(self.tab_data[ID], ignore_index= True)
+        return tf.constant(X_tab.values)
 
     def _load_region(self, regionID, tileIDs):
         """
