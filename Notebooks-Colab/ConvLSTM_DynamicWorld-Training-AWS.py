@@ -184,12 +184,12 @@ model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
     mode='min',  # Consider lower metric values as better
     save_best_only=True  # Save only the best model based on validation MSE
 )
-class ClearSessionCallback(tf.keras.callbacks.Callback):
+# class ClearSessionCallback(tf.keras.callbacks.Callback):
 
-    def on_epoch_end(self, epoch, logs=None):
+#     def on_epoch_end(self, epoch, logs=None):
 
-        tf.keras.backend.clear_session()
-clear_session_callback = ClearSessionCallback()
+#         tf.keras.backend.clear_session()
+# clear_session_callback = ClearSessionCallback()
 
 # PARAMS
 epochs = 20
@@ -197,7 +197,7 @@ model.fit(
     val_data_loader,
     epochs=epochs,
     validation_data = test_data_loader,
-    callbacks=[tensorboard_callback, reduce_lr, clear_session_callback],
+    callbacks=[tensorboard_callback, reduce_lr] # clear_session_callback
 )
 
 ############################################# SAVING THE MODEL  ###########################################
