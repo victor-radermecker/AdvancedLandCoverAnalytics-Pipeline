@@ -192,7 +192,14 @@ class SequenceDataLoader(Sequence):
             )
             img = Image.open(region_path)
             if self.n_channels == 1:
-                img = img.convert("L")  # convert to grayscale
+                # Convert the image to grayscale with custom separation
+                num_colors = 9
+                color_separation = 255.0 / (num_colors - 1)
+                img = img.convert("L", palette=Image.ADAPTIVE, colors=num_colors - 1)
+                img = Image.eval(
+                    img, lambda x: int(x // color_separation) * color_separation
+                )
+                # img = img.convert("L")  # convert to grayscale
             img = np.array(img) / 255.0
 
             for j, tileID in enumerate(tileIDs):
