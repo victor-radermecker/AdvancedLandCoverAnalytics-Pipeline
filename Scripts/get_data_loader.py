@@ -6,14 +6,15 @@ from tqdm import tqdm
 import ast
 
 sys.path.append("../src")
-from SequenceDataLoader import SequenceDataLoader
+sys.path.append("../Capstone_JPMorgan/src")
+from SequenceDataLoader_orig import SequenceDataLoader
 
 
 # Data Preparation
-def get_data_loader(df, IMG_DIR, IMG_SIZE, BATCH_SIZE, LABELS, N_CHANNELS, TAB_DATA):
+def get_data_loader(df, IMG_DIR, IMG_SIZE, BATCH_SIZE, LABELS, N_CHANNELS, TAB_DATA = None):
     filename = "landcover_batchID_"
     list_IDs = [filename + str(s) for s in df["batch_id"].unique()]
-
+    # print('list_IDs:', list_IDs)
     # Iterate over the DataFrame and group tile IDs based on batch IDs
     tile_region_dic = {}
     data = df[df.year == 2017]
@@ -29,7 +30,7 @@ def get_data_loader(df, IMG_DIR, IMG_SIZE, BATCH_SIZE, LABELS, N_CHANNELS, TAB_D
     tile_region_dic = {filename + str(k): v for k, v in tile_region_dic.items()}
 
     # Get the urbanization data for each fishnet
-    YEAR = 2022
+    YEAR = LABELS[-1] + 1
     TARGET = "urbanization"
     fishnet_urbanization = {}
     data = df[df.year == YEAR][["tile_id", TARGET]]
@@ -60,7 +61,7 @@ def get_data_loader(df, IMG_DIR, IMG_SIZE, BATCH_SIZE, LABELS, N_CHANNELS, TAB_D
         batch_size=BATCH_SIZE,
         n_channels=N_CHANNELS,
         shuffle=True,
-        tab_data=TAB_DATA,
+        tab_data=TAB_DATA
     )
 
     return data_loader

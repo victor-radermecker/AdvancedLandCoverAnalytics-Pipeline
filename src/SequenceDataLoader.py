@@ -38,6 +38,7 @@ class SequenceDataLoader(Sequence):
         """
         self.labels = labels
         self.list_IDs = list_IDs  # name of all batch_IDs
+        # print('SequenceDataLoader listIDs1',self.list_IDs)
         self.target = target
         self.tile_region_dic = tile_region_dic
         self.tile_coordinates = tile_coordinates
@@ -47,6 +48,7 @@ class SequenceDataLoader(Sequence):
         self.n_channels = n_channels
         self.shuffle = shuffle
         self._init_params()
+        # print('SequenceDataLoader before epoch end function listIDs1',self.list_IDs)
         self.on_epoch_end()
         self.tab_data = tab_data
 
@@ -81,16 +83,16 @@ class SequenceDataLoader(Sequence):
 
         # Generate data
         X = self._generate_X(batch)
-        y = self._generate_y(batch)
+        # y = self._generate_y(batch)
 
         if self.tab_data is not None:
             X = (X, self._generate_X_tab(batch))
-
-        return X, y
+        return np.squeeze(X.astype(np.uint8)) #, y
 
     def on_epoch_end(self):
         """Updates indexes after each epoch"""
         self.region_indexes = np.arange(len(self.list_IDs))
+        # print('on epoch listIDs:', self.region_indexes)
         if self.shuffle == True:
             np.random.shuffle(self.region_indexes)
         self.create_batches()
@@ -194,7 +196,8 @@ class SequenceDataLoader(Sequence):
             img = Image.open(region_path)
             if self.n_channels == 1:
                 img = img.convert("L")  # convert to grayscale
-            img = np.array(img) / 255.0
+            img = np.array(img).astype(np.uint8)
+            # img = np.array(img) / 255.0
 
             for j, tileID in enumerate(tileIDs):
                 coordinates = self.tile_coordinates[tileID]
@@ -205,7 +208,7 @@ class SequenceDataLoader(Sequence):
 
         return X
 
-    def _crop_image(self, image, tile_id, batch_id, coordinates):
+    def _crop_image(self, image, tile_id, batch_id, coordinates, upscale=True):
         xmin, ymin, xmax, ymax = coordinates
         subimage = image[ymin:ymax, xmin:xmax]
 
@@ -214,6 +217,8 @@ class SequenceDataLoader(Sequence):
                 f"Subimage {tile_id} in batch {batch_id} is too small. Please check the image and fishnet."
             )
         subimage = subimage[: self.dim[0], : self.dim[1]]
+        subimage = Image.fromarray(subimage).resize((64,64))
+        subimage = np.array(subimage).astype(np.uint8)
         return subimage
 
     ###################################################################################################
@@ -232,8 +237,11 @@ class SequenceDataLoader(Sequence):
             img.convert("L") for img in images
         ]  # Convert back to grayscale
         image_data = [
-            np.array(img) / 255.0 for img in grayscale_images
+            np.array(img).astype(np.uint8) for img in grayscale_images
         ]  # Convert to float and normalize
+        # image_data = [
+        #     np.array(img) / 255.0 for img in grayscale_images
+        # ]  # Convert to float and normalize
         return np.stack(image_data, axis=-1)
 
     def _load_grayscale_image(self, image_path):
@@ -244,5 +252,7 @@ class SequenceDataLoader(Sequence):
         """
         img = Image.open(image_path).convert("P", palette=Image.ADAPTIVE, colors=9)
         img = img.convert("L")  # Convert back to grayscale
-        img = np.array(img) / 255.0
+        img = np.array(img).astype(np.uint8)
+        # img = np.array(img) / 255.0
+
         return img
