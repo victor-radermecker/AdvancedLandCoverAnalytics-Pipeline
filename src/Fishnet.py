@@ -16,8 +16,6 @@ from prettytable import PrettyTable
 import folium
 from tqdm.contrib import tzip
 import matplotlib.cm as cm
-
-# import branca.colormap as cm
 from shapely.geometry import box
 from tqdm import tqdm
 
@@ -44,6 +42,7 @@ class Fishnet:
         """
         self.tile_width_miles = tile_size_miles
         self.tile_height_miles = tile_size_miles
+        self.filtered = False
 
         # The user may provid only a Start point or only a Shapefile
         if coordinates is not None and shapefile_path is None:
@@ -141,9 +140,26 @@ class Fishnet:
         GeoDataFrame: A filtered GeoDataFrame containing only the bounding boxes within the larger bounding box.
         """
         xmin, ymin, xmax, ymax = bbox
+        self.filtered = True
         bounding_box = Polygon([(xmin, ymin), (xmax, ymin), (xmax, ymax), (xmin, ymax)])
+        self.filter_region = bbox
         self.filtered_fishnet = self.fishnet[self.fishnet.intersects(bounding_box)]
         self.filtered_batches = self.batches[self.batches.intersects(bounding_box)]
+
+        # Create filtered_fishnet_cols and filtered_fishnet_rows
+
+        # compute the width of the filtered fishnet area
+        L = (
+            self.filtered_fishnet["geometry"].bounds["maxx"].max()
+            - self.filtered_fishnet["geometry"].bounds["minx"].min()
+        )
+        H = (
+            self.filtered_fishnet["geometry"].bounds["maxy"].max()
+            - self.filtered_fishnet["geometry"].bounds["miny"].min()
+        )
+
+        self.filtered_fishnet_rows = int(H / self.tile_height_degrees)
+        self.filtered_fishnet_cols = int(L / self.tile_width_degrees)
 
     # -------------------------------------------------------------------------- #
     #                              Batches                                       #
@@ -285,10 +301,15 @@ class Fishnet:
 
         # up-left, up, up-right, left, right, down-left, down, down-right
         position_name = {
-            (-1,-1): 'UL', (-1,0): 'U', (-1,1): 'UR', 
-            (0,-1): 'L', (0,1): 'R', 
-            (1,-1): 'DL', (1,0): 'D', (1,1): 'DR',
-        } 
+            (-1, -1): "UL",
+            (-1, 0): "U",
+            (-1, 1): "UR",
+            (0, -1): "L",
+            (0, 1): "R",
+            (1, -1): "DL",
+            (1, 0): "D",
+            (1, 1): "DR",
+        }
 
         for i in tqdm(
             range(self.fishnet_cols),
@@ -316,18 +337,21 @@ class Fishnet:
                     and y >= 0
                     and y < self.fishnet_cols
                 ]
-                neighbor_ids = {key:self.row_col_to_id(x, y) for key,(x, y) in zip(neighbor_position, neighbor_indices)}
+                neighbor_ids = {
+                    key: self.row_col_to_id(x, y)
+                    for key, (x, y) in zip(neighbor_position, neighbor_indices)
+                }
                 self.neighbors[self.row_col_to_id(i, j)] = neighbor_ids
 
         # add neighbors to fishnet
         self.fishnet["neighbors"] = self.fishnet.apply(
             lambda row: self.neighbors[row["id"]], axis=1
         )
-
-        # add neighbors to filtered fishnet
-        self.filtered_fishnet["neighbors"] = self.filtered_fishnet.apply(
-            lambda row: self.neighbors[row["id"]], axis=1
-        )
+        if self.filtered:
+            # add neighbors to filtered fishnet
+            self.filtered_fishnet["neighbors"] = self.filtered_fishnet.apply(
+                lambda row: self.neighbors[row["id"]], axis=1
+            )
 
         print("All neighbors computed successfully.")
 
@@ -343,11 +367,13 @@ class Fishnet:
             )
         else:
             fig, ax = plt.subplots(figsize=(10, 10))
-            self.tx.plot(ax=ax, color="white", edgecolor="black")
             # Plot the fishnet tiles
             self.fishnet.plot(ax=ax, color="none", edgecolor="red")
             # Plot the batch tiles
             self.batches.plot(ax=ax, color="none", edgecolor="darkgreen", linewidth=3)
+            self.tx.plot(
+                ax=ax, facecolor="darkred", alpha=0.5, edgecolor="black", linewidth=1
+            )
             plt.show()
 
     def plot_filtered_fishnet(self, zoom=False):
@@ -363,13 +389,14 @@ class Fishnet:
                 )
 
             fig, ax = plt.subplots(figsize=(10, 10))
-            self.tx.plot(ax=ax, color="white", edgecolor="black")
             # Plot the fishnet tiles
             self.filtered_fishnet.plot(ax=ax, color="none", edgecolor="red")
             # Plot the batch tiles
             self.filtered_batches.plot(
                 ax=ax, color="none", edgecolor="darkgreen", linewidth=3
             )
+            # Plot the tx
+            self.tx.plot(ax=ax, color="none", edgecolor="black")
             if zoom:
                 ax.set_xlim(
                     self.filtered_batches.total_bounds[0],
@@ -435,7 +462,9 @@ class Fishnet:
         mean_y = (row["geometry"].bounds["miny"] + row["geometry"].bounds["maxy"]) / 2
 
         # find all neighbors
-        neighbors = self.fishnet[self.fishnet["id"].isin(list(list(row["neighbors"])[0].values()))]
+        neighbors = self.fishnet[
+            self.fishnet["id"].isin(list(list(row["neighbors"])[0].values()))
+        ]
 
         # create empty map
         m = folium.Map(
@@ -505,7 +534,7 @@ class Fishnet:
     #                               Utils                                        #
     # -------------------------------------------------------------------------- #
 
-    def fishnet_info(self):
+    def fishnet_info(self, return_=False):
         print("\n Fishnet Object has the following attributes: \n")
         table = PrettyTable()
         table.field_names = ["Metric", "Degrees", "Miles"]
@@ -520,13 +549,11 @@ class Fishnet:
             ["Tiles Height", self.tile_height_degrees, self.tile_height_miles]
         )
         print(table)
+        if return_:
+            return table
 
-    def batch_info(self):
+    def batch_info(self, return_=False):
         print("\nFishnet Batch has the following attributes: \n")
-        print(
-            "Number of tiles per batch: ",
-            int(self.batch_width_miles / self.tile_width_miles),
-        )
         table = PrettyTable()
         table.field_names = ["Metric", "Tiles", "Batches"]
         table.add_row(["Rows", self.fishnet_rows, self.batch_rows])
@@ -539,6 +566,8 @@ class Fishnet:
             ]
         )
         print(table)
+        if return_:
+            return table
 
         table = PrettyTable()
         table.field_names = ["Metric", "Degrees", "Miles"]

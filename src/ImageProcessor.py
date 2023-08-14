@@ -92,6 +92,11 @@ class ImageProcessor:
             ),
             axis=1,
         )
+
+        # raise Error if image coordinates is nan
+        if image_coordinates.isna().any():
+            raise Exception("Error: Image coordinates are nan.")
+
         return image_coordinates
 
     def latlong_to_pixel(self, batch_coords, tile_coords, id):
@@ -181,11 +186,87 @@ class ImageProcessor:
 
         return unique_colors
 
+    def generate_processed_csv(self, save_path, file_name, filter):
+        # Compute Urbanization Rate
+        years = list(range(2016, 2023))
+        for yr in years[1:]:
+            self.fh.compute_difference(
+                f"MeanPixel_{yr}", f"MeanPixel_{yr-1}", filtered=filter, normalize=True
+            )
+
+        # rename MeanPixel_2017-MeanPixel_2016 to urbanization_rate_2016
+        for yr in years[1:]:
+            self.fishnet.rename(
+                columns={f"MeanPixel_{yr}-MeanPixel_{yr-1}": f"urbanization_rate_{yr}"},
+                inplace=True,
+            )
+
+        for yr in years:
+            self.fishnet.rename(
+                columns={f"MeanPixel_{yr}": f"urbanization_{yr}"}, inplace=True
+            )
+
+        self.fishnet.rename(columns={"id": "tile_id"}, inplace=True)
+        self.fishnet["tile_id"] = self.fishnet["tile_id"].astype(int)
+        self.fishnet["batch_id"] = self.fishnet["batch_id"].astype(int)
+
+        # Extracting Lat Long coordinates
+        self.fishnet["centroid"] = self.fishnet["geometry"].apply(lambda x: x.centroid)
+        self.fishnet["Lat"] = self.fishnet["centroid"].apply(lambda x: x.y)
+        self.fishnet["Lon"] = self.fishnet["centroid"].apply(lambda x: x.x)
+
+        vars1 = ["tile_id", "batch_id"] + [
+            f"urbanization_rate_{year}" for year in range(2017, 2023)
+        ]
+        vars2 = ["tile_id", "batch_id"] + [
+            f"urbanization_{year}" for year in range(2016, 2023)
+        ]
+
+        data = self.fishnet[vars1].melt(
+            id_vars=["tile_id", "batch_id"],
+            var_name="year",
+            value_name="urbanization_rate",
+        )
+        data["year"] = data["year"].str[-4:]
+        data["urbanization"] = (
+            self.fishnet[vars2].melt(
+                id_vars=["tile_id", "batch_id"],
+                var_name="year",
+                value_name="urbanization",
+            )["urbanization"]
+            / 255
+        )
+        # data["ImageCoordinates"] =
+        coords = self.fishnet[["tile_id", "ImageCoordinates"]]
+        data = data.merge(coords, on="tile_id")
+
+        # data['Lat'] is the latitude of the centroid of the tile in fc.filtered_fishnet['Lat'] joint
+        data = data.merge(
+            self.fishnet[["tile_id", "batch_id", "Lat", "Lon"]], # Add ImageCoordinates here?
+            on=["tile_id", "batch_id"],
+        )
+
+        # Save result
+        data.to_csv(save_path + file_name + ".csv", index=False)
+
+        # Save Metadata
+        with open(save_path + file_name + ".txt", "w") as f:
+            f.write("\n\nGeneral Fishnet Information:\n")
+            f.write(str(self.fh.fishnet_info(return_=True)) + "\n\n")
+            f.write("\n\nGeneral Batch Information:\n")
+            f.write(str(self.fh.batch_info(return_=True)))
+            if self.fh.filtered:
+                f.write("\n\n\nGeneral Filter Information:")
+                f.write("\nFiltered region: " + str(self.fh.filter_region))
+                f.write("\nNumber of rows: " + str(self.fh.filtered_fishnet_rows))
+                f.write("\nNumber of cols: " + str(self.fh.filtered_fishnet_cols))
+
     def cnn_partition_images(
         self,
         image_folder,
         file_name,
         year,
+        img_size,
         warning=True,
         show_progress=True,
     ):
@@ -193,7 +274,7 @@ class ImageProcessor:
         # If the user says yes, continue, otherwise, stop the code
         if warning:
             answer = input(
-                "Warning, this code will create a new folder CNN in the /Image/ folder, which may take a lot of space on the hard drive. Continue? Yes or No?"
+                "Warning, this code will create a new folder CNN in the /image_folder/ folder, which may require consequent storage on the hard drive. Continue? Yes or No?"
             )
         else:
             answer = "Yes"
@@ -207,7 +288,12 @@ class ImageProcessor:
             )
 
             for batch_id in progress_bar:
-                image_path = os.path.join(image_folder, f"{file_name}_{batch_id}.tif")
+                image_path = os.path.join(
+                    image_folder,
+                    year,
+                    "Final",
+                    f"{file_name}_{batch_id}.tif",
+                )
                 image = imageio.imread(image_path)
 
                 # extract all fishnet tile ids in the current batch
@@ -223,17 +309,20 @@ class ImageProcessor:
                             f"Subimage {tile_id} in batch {batch_id} is too small. Please check the image and fishnet."
                         )
 
+                    # Crop image to img_size
+                    subimage = subimage[: img_size[0], : img_size[1]]
+
                     # check if the directory self.image_folder + 'CNN' exists, otherwise, create it
-                    if not os.path.exists(image_folder + f"../../CNN/{year}/"):
-                        os.makedirs(image_folder + f"../../CNN/{year}/")
+                    if not os.path.exists(image_folder + f"/CNN/{year}/"):
+                        os.makedirs(image_folder + f"/CNN/{year}/")
                         print(
                             "Directory ",
-                            image_folder + f"../CNN/{year}/",
+                            image_folder + f"/CNN/{year}/",
                             " Created ",
                         )
 
                     export_path = (
-                        image_folder + f"../../CNN/{year}/" + f"/{int(tile_id)}.tif"
+                        image_folder + f"/CNN/{year}/" + f"/{int(tile_id)}.tif"
                     )
                     imageio.imwrite(export_path, subimage)
 

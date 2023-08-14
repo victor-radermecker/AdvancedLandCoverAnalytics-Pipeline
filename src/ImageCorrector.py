@@ -1,5 +1,5 @@
 import os
-import cv2
+from PIL import Image
 import numpy as np
 from prettytable import PrettyTable
 from tqdm import tqdm
@@ -8,10 +8,12 @@ from matplotlib import pyplot as plt
 
 
 class ImageCorrector:
-    def __init__(self, base_path):
+    def __init__(self, base_path, verbose=True):
         self.base_path = base_path
-        self.years = self.list_folders()
-        self.summary()
+        self.years = sorted(self.list_folders())
+        self.verbose = verbose
+        if self.verbose:
+            self.summary()
 
     def summary(self):
         # create a table
@@ -74,7 +76,6 @@ class ImageCorrector:
         # populate the table
         for year in tqdm(self.years, desc="Loading images...", file=sys.stdout):
             final_path = os.path.join(self.base_path, year, "Final")
-
             final_black_pixel_proportion = self.compute_color_pixels_proportion(
                 final_path, color=[0, 0, 0]
             )
@@ -101,7 +102,7 @@ class ImageCorrector:
             entry
             for entry in os.listdir(self.base_path)
             if os.path.isdir(os.path.join(self.base_path, entry))
-            # and entry.startswith("export_")
+            and entry.startswith("20")
         ]
 
     def count_images(self, path):
@@ -120,16 +121,26 @@ class ImageCorrector:
         ]
 
     def read_image(self, path):
-        return cv2.imread(path, cv2.IMREAD_COLOR)
+        img = Image.open(path)
+        data = np.asarray(img, dtype="int32")
+        return data
 
     def save_image(self, path, img):
-        cv2.imwrite(path, img)
+        # save the image with PIL
+        im = Image.fromarray(img.astype("uint8"))
+        im.save(path)
 
     def correct_images(self):
         print("Imputing Summer missing pixels with Year data. Processing images...")
-        for year in self.years:
+        for year in self.years:  # years is a string"
+            self.set_final_path(year)
+            # Input paths
             summer_path = os.path.join(self.base_path, str(year), "Summer")
             year_path = os.path.join(self.base_path, str(year), "Year")
+
+            # Output paths
+            if not os.path.exists(os.path.join(self.base_path, str(year), "Final")):
+                os.makedirs(os.path.join(self.base_path, str(year), "Final"))
             output_path = os.path.join(self.base_path, str(year), "Final")
 
             summer_files = sorted(self.list_files(summer_path))
@@ -137,7 +148,7 @@ class ImageCorrector:
 
             for summer_file, year_file in tqdm(
                 zip(summer_files, year_files),
-                desc=f"Processing images for year {year}",
+                desc=f"Correcting images for year {year}",
                 file=sys.stdout,
                 total=len(summer_files),
             ):
@@ -147,13 +158,52 @@ class ImageCorrector:
                 if summer_img is None or year_img is None:
                     raise Exception("Error reading image.")
 
-                if summer_img.shape != year_img.shape:                   
+                if summer_img.shape != year_img.shape:
                     raise Exception("Images have different dimensions.")
 
-                result_img = np.where(summer_img != 0, summer_img, year_img)
+                result_img = np.where(summer_img != [0, 0, 0], summer_img, year_img)
+
+                if int(year) > 2016:
+                    previous_img = self.read_image(
+                        os.path.join(
+                            self.base_path, str(int(year) - 1), "Final", summer_file
+                        )
+                    )
+                    result_img = self.discard_deurbanization(previous_img, result_img)
 
                 # Save locally
                 self.save_image(os.path.join(output_path, summer_file), result_img)
+
+        if self.verbose:
+            self.summary_final()
+
+    def set_final_path(self, year):
+        final_path = os.path.join(self.base_path, year, "Final")
+        # Creating Final Directory if it doesn't exist
+        if not os.path.exists(final_path):
+            print(f"Creating directory {final_path}.")
+            os.makedirs(final_path)
+
+    def discard_deurbanization(self, previous_img, result_img):
+        # avoid deurbanization in the data
+        return np.where(previous_img != [196, 40, 27], result_img, previous_img)
+
+    def extract_label(self, image, color):
+        red_pixels = np.all(
+            [
+                image[:, :, 0] == color[0],  # Red channel
+                image[:, :, 1] == color[1],  # Green channel
+                image[:, :, 2] == color[2],  # Blue channel
+            ],
+            axis=0,
+        )
+        extracted_image = np.zeros_like(image)
+        extracted_image[red_pixels] = [
+            255,
+            255,
+            255,
+        ]  # Extracted image is black & white
+        return extracted_image
 
     # @TO_OPTIMIZE
     def compute_color_pixels_proportion(self, path, color=[0, 0, 0]):
@@ -174,73 +224,3 @@ class ImageCorrector:
 
         proportion = color_pixels / total_pixels if total_pixels > 0 else 0
         return proportion
-
-
-# import os
-# import dropbox
-# import cv2
-# import numpy as np
-
-
-# class ImageCorrector:
-#     def __init__(self, dbx_token_path):
-#         # Read API Access Token from file
-#         with open(dbx_token_path) as f:
-#             dbx_token = f.read()
-
-#         self.dbx = dropbox.Dropbox(dbx_token)
-
-#     def list_files(self, path):
-#         try:
-#             res = self.dbx.files_list_folder(path).entries
-#             return [
-#                 entry.name
-#                 for entry in res
-#                 if isinstance(entry, dropbox.files.FileMetadata)
-#             ]
-#         except dropbox.exceptions.ApiError as err:
-#             print(f"Dropbox API Error: {err}")
-#             return []
-
-#     def read_image(self, path):
-#         try:
-#             metadata, res = self.dbx.files_download(path)
-#             img_arr = np.asarray(bytearray(res.content), dtype=np.uint8)
-#             img = cv2.imdecode(img_arr, cv2.IMREAD_COLOR)
-#             return img
-#         except dropbox.exceptions.ApiError as err:
-#             print(f"Dropbox API Error: {err}")
-#             return None
-
-#     def upload_image(self, path, file_name):
-#         try:
-#             with open(file_name, "rb") as f:
-#                 self.dbx.files_upload(
-#                     f.read(), path, mode=dropbox.files.WriteMode("overwrite")
-#                 )
-#         except dropbox.exceptions.ApiError as err:
-#             print(f"Dropbox API Error: {err}")
-
-#     def process_images(self, base_path, years):
-#         for year in years:
-#             summer_path = os.path.join(base_path, str(year), "Summer")
-#             yearly_path = os.path.join(base_path, str(year), "Yearly")
-#             output_path = os.path.join(base_path, str(year), "Final")
-
-#             summer_files = self.list_files(summer_path)
-#             yearly_files = self.list_files(yearly_path)
-
-#             for summer_file, yearly_file in zip(summer_files, yearly_files):
-#                 summer_img = self.read_image(os.path.join(summer_path, summer_file))
-#                 yearly_img = self.read_image(os.path.join(yearly_path, yearly_file))
-
-#                 if summer_img is None or yearly_img is None:
-#                     raise Exception("Error reading image.")
-
-#                 result_img = np.where(summer_img == 0, yearly_img, summer_img)
-
-#                 # Upload back to Dropbox
-#                 self.upload_image(os.path.join(output_path, summer_file), result_img)
-
-#                 # Remove the file from local directory
-#                 os.remove(summer_file)

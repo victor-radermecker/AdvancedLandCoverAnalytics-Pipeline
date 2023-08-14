@@ -52,6 +52,12 @@ docs/_build/
 
 Images/
 Images2/
+Images3/
 Gis/
 Notebooks/runs/
 Notebooks/models/
+Notebooks/pretrained-models/
+Notebooks/logs/
+Outputs/
+Results/
+Archives/
