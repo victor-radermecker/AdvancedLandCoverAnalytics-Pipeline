@@ -62,7 +62,6 @@ dfs_other = [fc_other[i:i+max_rows] for i in range(0, len(fc_other), max_rows)]
 i = 3
 df_which = 'sah' #dfw, sah, desert, other
 year_to_run = 2016 #2017, 2018, 2019
-kind = 'prob' # 'count', 'prob'
 
 if df_which == 'dfw':
     print('Initializing image exporter...', flush=True)
@@ -111,6 +110,6 @@ for pe in PERIODS:
         else:
             image_exporter.set_date_range(year, year, "01", "12")
   
-        image_exporter.export_images(SAVE_DIR, '{}_{}_{}_{}_export_{}_'.format(kind, df_which, i, pe, year))
+        image_exporter.export_images(SAVE_DIR, '{}_{}_{}_{}_export_{}_'.format(df_which, i, pe, year))
 
 print("Done.")

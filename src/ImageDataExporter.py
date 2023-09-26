@@ -8,9 +8,6 @@ import math
 import os
 from googleapiclient.errors import HttpError
 
-PROB = True
-DW = False
-
 ee.Initialize()
 
 class ImageDataExporter:
