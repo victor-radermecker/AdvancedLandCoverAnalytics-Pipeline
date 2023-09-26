@@ -80,7 +80,6 @@ class SequenceDataLoader(Sequence):
         # list_IDs_temp = [self.list_IDs[k] for k in indexes]
 
         batch = self.batches[index]
-
         # Generate data
         X = self._generate_X(batch)
         y = self._generate_y(batch)

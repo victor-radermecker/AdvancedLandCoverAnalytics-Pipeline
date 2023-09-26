@@ -11,7 +11,7 @@ from SequenceDataLoader_orig import SequenceDataLoader
 
 
 # Data Preparation
-def get_data_loader(df, IMG_DIR, IMG_SIZE, BATCH_SIZE, LABELS, N_CHANNELS, TAB_DATA = None):
+def get_data_loader(df, IMG_DIR, IMG_SIZE, BATCH_SIZE, LABELS, N_CHANNELS, YEAR, TAB_DATA = None):
     filename = "landcover_batchID_"
     list_IDs = [filename + str(s) for s in df["batch_id"].unique()]
     # print('list_IDs:', list_IDs)
@@ -28,9 +28,8 @@ def get_data_loader(df, IMG_DIR, IMG_SIZE, BATCH_SIZE, LABELS, N_CHANNELS, TAB_D
 
     # rename the keys of the dictionary to match the list_IDs
     tile_region_dic = {filename + str(k): v for k, v in tile_region_dic.items()}
-
     # Get the urbanization data for each fishnet
-    YEAR = LABELS[-1] + 1
+    # YEAR = LABELS[-1] + 1
     TARGET = "urbanization"
     fishnet_urbanization = {}
     data = df[df.year == YEAR][["tile_id", TARGET]]

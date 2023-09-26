@@ -602,7 +602,8 @@ class Fishnet:
         Fishnet: The loaded Fishnet object.
         """
         with open(file_path, "rb") as file:
-            return pickle.load(file)
+            ##pickle.load(file)
+            return pd.read_pickle(file) 
 
     def compute_difference(self, feature1, feature2, filtered=False, normalize=False):
         if filtered:
