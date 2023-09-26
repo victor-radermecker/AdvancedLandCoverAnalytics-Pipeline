@@ -86,13 +86,14 @@ class ImageDataExporter:
                 built_last_year = dw_clip_last_year.select('built')
                 mean_built_last_year = built_last_year.reduce(reducer)
                 newUrban1year = mean_built_last_year.lt(0.15).And(mean_built.gt(0.35))
-                data['perc_new_urban_1year'][i] = newUrban1year * 100
 
                 newUrban1year = newUrban1year.reduceRegion(
                     reducer=ee.Reducer.mean(),
                     geometry=region,
                     scale=10
                 ).getInfo()['built_mean']
+
+                data['perc_new_urban_1year'][i] = newUrban1year * 100
 
                 if dw_2_years_ago:
                     dw_clip_2_years_ago = dw_2_years_ago.filterBounds(region)
