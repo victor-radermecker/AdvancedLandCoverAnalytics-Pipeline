@@ -110,6 +110,6 @@ for pe in PERIODS:
         else:
             image_exporter.set_date_range(year, year, "01", "12")
   
-        image_exporter.export_images(SAVE_DIR, '{}_{}_{}_{}_export_{}_'.format(df_which, i, pe, year))
+        image_exporter.export_images(SAVE_DIR, '{}_{}_{}_export_{}_'.format(df_which, i, pe, year))
 
 print("Done.")
