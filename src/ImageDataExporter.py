@@ -33,10 +33,10 @@ class ImageDataExporter:
 
             if startYear == 2017:
                 twoYearsAgoStartDate = f"{startYear-2}-07-01"
-                twoYearsAgoStartDate = f"{endYear-2}-{endMonth}-01"
+                twoYearsAgoEndDate = f"{endYear-2}-{endMonth}-01"
 
             twoYearsAgoStartDate = f"{startYear-2}-{startMonth}-01"
-            twoYearsAgoStartDate = f"{endYear-2}-{endMonth}-01"
+            twoYearsAgoEndDate = f"{endYear-2}-{endMonth}-01"
 
         self.startDate = startDate
         self.endDate = endDate
