@@ -59,10 +59,10 @@ dfs_desert = [fc_desert[i:i+max_rows] for i in range(0, len(fc_desert), max_rows
 # 12 of them
 dfs_other = [fc_other[i:i+max_rows] for i in range(0, len(fc_other), max_rows)]
 
-i = 2
-df_which = 'desert' #dfw, sah, desert, other
+i = 3
+df_which = 'sah' #dfw, sah, desert, other
 year_to_run = 2016 #2017, 2018, 2019
-kind = 'ntl' # 'count', 'prob'
+kind = 'prob' # 'count', 'prob'
 
 if df_which == 'dfw':
     print('Initializing image exporter...', flush=True)
