@@ -48,6 +48,8 @@ class ImageDataExporter:
         self.twoYearsAgoStartDate = twoYearsAgoStartDate
         self.twoYearsAgoEndDate = twoYearsAgoEndDate
 
+        print(self.lastYearStartDate, self.lastYearEndDate, self.twoYearsAgoStartDate, self.twoYearsAgoEndDate)
+
     def export_images(self, save_dir, fname_prefix, fname = 'raw_value_counts.csv'):
 
         data = {'tile_no': [i for i in range(self.fh.shape[0])], 'expectation_built': [-1 for _ in range(self.fh.shape[0])], \
@@ -94,7 +96,8 @@ class ImageDataExporter:
                     scale=10
                 ).getInfo()['built_mean']
 
-                data['perc_new_urban_1year'][i] = newUrban1year * 100
+                if newUrban1year:
+                    data['perc_new_urban_1year'][i] = newUrban1year * 100
 
                 if dw_2_years_ago:
                     dw_clip_2_years_ago = dw_2_years_ago.filterBounds(region)
@@ -108,7 +111,8 @@ class ImageDataExporter:
                         scale=10
                     ).getInfo()['built_mean']
 
-                    data['perc_new_urban_2year'][i] = newUrban2year * 100
+                    if newUrban2year:
+                        data['perc_new_urban_2year'][i] = newUrban2year * 100
 
                 ### Proportion Built
                 reducer = ee.Reducer.mode()
