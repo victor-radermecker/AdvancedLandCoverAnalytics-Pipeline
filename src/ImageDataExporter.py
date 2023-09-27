@@ -35,8 +35,9 @@ class ImageDataExporter:
                 twoYearsAgoStartDate = f"{startYear-2}-07-01"
                 twoYearsAgoEndDate = f"{endYear-2}-{endMonth}-01"
 
-            twoYearsAgoStartDate = f"{startYear-2}-{startMonth}-01"
-            twoYearsAgoEndDate = f"{endYear-2}-{endMonth}-01"
+            else:
+                twoYearsAgoStartDate = f"{startYear-2}-{startMonth}-01"
+                twoYearsAgoEndDate = f"{endYear-2}-{endMonth}-01"
 
         self.startDate = startDate
         self.endDate = endDate
