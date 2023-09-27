@@ -48,8 +48,6 @@ class ImageDataExporter:
         self.twoYearsAgoStartDate = twoYearsAgoStartDate
         self.twoYearsAgoEndDate = twoYearsAgoEndDate
 
-        print(self.lastYearStartDate, self.lastYearEndDate, self.twoYearsAgoStartDate, self.twoYearsAgoEndDate)
-
     def export_images(self, save_dir, fname_prefix, fname = 'raw_value_counts.csv'):
 
         data = {'tile_no': [i for i in range(self.fh.shape[0])], 'expectation_built': [-1 for _ in range(self.fh.shape[0])], \
@@ -85,34 +83,40 @@ class ImageDataExporter:
                 data['expectation_built'][i] = expected_built
 
                 ### New Urban
-                dw_clip_last_year = dw_last_year.filterBounds(region)
-                built_last_year = dw_clip_last_year.select('built')
-                mean_built_last_year = built_last_year.reduce(reducer)
-                newUrban1year = mean_built_last_year.lt(0.15).And(mean_built.gt(0.35))
+                try:
+                    dw_clip_last_year = dw_last_year.filterBounds(region)
+                    built_last_year = dw_clip_last_year.select('built')
+                    mean_built_last_year = built_last_year.reduce(reducer)
+                    newUrban1year = mean_built_last_year.lt(0.15).And(mean_built.gt(0.35))
 
-                newUrban1year = newUrban1year.reduceRegion(
-                    reducer=ee.Reducer.mean(),
-                    geometry=region,
-                    scale=10
-                ).getInfo()['built_mean']
-
-                if newUrban1year:
-                    data['perc_new_urban_1year'][i] = newUrban1year * 100
-
-                if dw_2_years_ago:
-                    dw_clip_2_years_ago = dw_2_years_ago.filterBounds(region)
-                    built_2_years_ago = dw_clip_2_years_ago.select('built')
-                    mean_built_2_years_ago = built_2_years_ago.reduce(reducer)
-                    newUrban2year = mean_built_2_years_ago.lt(0.15).And(mean_built.gt(0.35))
-
-                    newUrban2year = newUrban2year.reduceRegion(
+                    newUrban1year = newUrban1year.reduceRegion(
                         reducer=ee.Reducer.mean(),
                         geometry=region,
                         scale=10
                     ).getInfo()['built_mean']
 
-                    if newUrban2year:
-                        data['perc_new_urban_2year'][i] = newUrban2year * 100
+                    if newUrban1year:
+                        data['perc_new_urban_1year'][i] = newUrban1year * 100
+                except:
+                    data['perc_new_urban_1year'][i] = -1000
+
+                try:
+                    if dw_2_years_ago:
+                        dw_clip_2_years_ago = dw_2_years_ago.filterBounds(region)
+                        built_2_years_ago = dw_clip_2_years_ago.select('built')
+                        mean_built_2_years_ago = built_2_years_ago.reduce(reducer)
+                        newUrban2year = mean_built_2_years_ago.lt(0.15).And(mean_built.gt(0.35))
+
+                        newUrban2year = newUrban2year.reduceRegion(
+                            reducer=ee.Reducer.mean(),
+                            geometry=region,
+                            scale=10
+                        ).getInfo()['built_mean']
+
+                        if newUrban2year:
+                            data['perc_new_urban_2year'][i] = newUrban2year * 100
+                except:
+                    data['perc_new_urban_2year'][i] = -1000
 
                 ### Proportion Built
                 reducer = ee.Reducer.mode()
