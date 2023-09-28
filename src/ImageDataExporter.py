@@ -48,12 +48,26 @@ class ImageDataExporter:
         self.twoYearsAgoStartDate = twoYearsAgoStartDate
         self.twoYearsAgoEndDate = twoYearsAgoEndDate
 
-    def export_images(self, save_dir, fname_prefix, fname = 'raw_value_counts.csv'):
+    def export_images(self, save_dir, fname_prefix, checkpoint_file = None, fname = 'raw_value_counts.csv'):
 
-        data = {'tile_no': [i for i in range(self.fh.shape[0])], 'expectation_built': [-1 for _ in range(self.fh.shape[0])], \
-                'perc_built': [-1 for _ in range(self.fh.shape[0])], 'ntl': [-1 for _ in range(self.fh.shape[0])], \
-                'perc_new_urban_1year': [-1 for _ in range(self.fh.shape[0])], 'perc_new_urban_2year': [-1 for _ in range(self.fh.shape[0])]}
+        if checkpoint_file:
+            self.df = pd.read_csv(os.path.join(save_dir, checkpoint_file), index_col=0)
+            data = self.df.to_dict()
 
+            filtered_df = self.df[self.df['expectation_built'] == -1]
+
+            if not filtered_df.empty:
+                starting_index = filtered_df.index[0]
+            else:
+                print('Checkpoint file already finished. Exiting.')
+                return
+
+        else:
+            data = {'tile_no': [i for i in range(self.fh.shape[0])], 'expectation_built': [-1 for _ in range(self.fh.shape[0])], \
+                    'perc_built': [-1 for _ in range(self.fh.shape[0])], 'ntl': [-1 for _ in range(self.fh.shape[0])], \
+                    'perc_new_urban_1year': [-1 for _ in range(self.fh.shape[0])], 'perc_new_urban_2year': [-1 for _ in range(self.fh.shape[0])]}
+            starting_index = 0
+        
         dw = ee.ImageCollection("GOOGLE/DYNAMICWORLD/V1").filter(ee.Filter.date(self.startDate, self.endDate))   
         dw_last_year = ee.ImageCollection("GOOGLE/DYNAMICWORLD/V1").filter(ee.Filter.date(self.lastYearStartDate, self.lastYearEndDate))   
         if self.twoYearsAgoStartDate:
@@ -62,7 +76,7 @@ class ImageDataExporter:
             dw_2_years_ago = None
         viirs = ee.ImageCollection("NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG").filterDate(self.startDate, self.endDate).select('avg_rad')
 
-        for i in tqdm(range(self.fh.shape[0])):
+        for i in tqdm(range(starting_index, self.fh.shape[0])):
 
             try:
                 region =  ee.Geometry.Rectangle(self.fh['geometry'].iloc[i].bounds)

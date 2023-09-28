@@ -59,9 +59,11 @@ dfs_desert = [fc_desert[i:i+max_rows] for i in range(0, len(fc_desert), max_rows
 # 12 of them
 dfs_other = [fc_other[i:i+max_rows] for i in range(0, len(fc_other), max_rows)]
 
-i = 3
+i = 0
 df_which = 'sah' #dfw, sah, desert, other
 year_to_run = 2016 #2017, 2018, 2019
+# set this if there is some checkpoint file from which to start, otherwise set to none
+checkpoint_file = 'sub_prob_{}_{}_year_export_{}_raw_value_counts.csv'.format(df_which, i, year_to_run)
 
 if df_which == 'dfw':
     print('Initializing image exporter...', flush=True)
@@ -110,6 +112,6 @@ for pe in PERIODS:
         else:
             image_exporter.set_date_range(year, year, "01", "12")
   
-        image_exporter.export_images(SAVE_DIR, '{}_{}_{}_export_{}_'.format(df_which, i, pe, year))
+        image_exporter.export_images(SAVE_DIR, '{}_{}_{}_export_{}_'.format(df_which, i, pe, year), checkpoint_file)
 
 print("Done.")
