@@ -9,7 +9,7 @@ Follow these instructions to set up the project on your local machine.
 ### 1. Clone the Repository
 
 ```bash
-git clone git@github.com:victor-radermecker/Capstone_JPMorgan.git
+git clone https://github.com/victor-radermecker/Urbanization-Rate-Analysis-Through-Dynamic-World-Based-Video-Prediction.git
 ```
 
 Create a conda environment using the `requirements.yml` file.
