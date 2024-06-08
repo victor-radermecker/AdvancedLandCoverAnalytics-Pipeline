@@ -18,6 +18,9 @@ The pipeline is designed to handle the significant volume and potential noise in
 
 6. Integration with Machine Learning Models: The processed data, including images and tabular metrics, are seamlessly integrated into machine learning models. This allows for efficient analysis and prediction of land cover changes, such as urbanization.
 
+![alt text]([http://url/to/img.png](https://github.com/victor-radermecker/AdvancedLandCoverAnalytics-Pipeline/blob/main/img/batching.jpg))
+
+
 ### Case Study: Urbanization Prediction Using Dynamic World Data
 
 To validate our pipeline, we applied it to predict urbanization trends in a rapidly developing region. We partitioned the area into a grid and extracted annual composite images from 2016 to 2022 using the Dynamic World dataset. These images were processed to reduce noise and fill gaps, providing clean data for analysis. Our hybrid model, combining XGBoost and ConvLSTM (XGCLM), classified regions by urbanization activity and predicted future growth. The pipeline demonstrated high prediction accuracy, particularly in rapidly urbanizing areas, underscoring its effectiveness for large-scale land cover analysis and supporting sustainable urban planning.
