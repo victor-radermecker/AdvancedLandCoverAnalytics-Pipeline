@@ -20,6 +20,7 @@ The pipeline is designed to handle the significant volume and potential noise in
 
 ![alt text](https://github.com/victor-radermecker/AdvancedLandCoverAnalytics-Pipeline/blob/main/img/batching.jpg?raw=true)
 
+The image above describes the process of generating a fishnet from a specific region, and then employ a batching approach. One image per batch will be extracted.
 
 
 ### Case Study: Urbanization Prediction Using Dynamic World Data
