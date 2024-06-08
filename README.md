@@ -20,12 +20,7 @@ The pipeline is designed to handle the significant volume and potential noise in
 
 ### Case Study: Urbanization Prediction Using Dynamic World Data
 
-To demonstrate the efficacy of our pipeline, we conducted a case study focusing on urbanization prediction. The task was to forecast the future state of urban areas using historical land cover data extracted and processed through our pipeline. Specifically, we aimed to predict urban growth in a rapidly developing region by leveraging the temporal and spatial features of satellite imagery from the Dynamic World dataset.
-
-The study involved partitioning the region into a fishnet grid, extracting annual composite images for each tile from 2016 to 2022, and processing these images to reduce noise and fill gaps. Using the processed data, we implemented a hybrid modeling approach combining XGBoost and ConvLSTM models, termed XGCLM. The XGBoost classifier first identified regions with significant urbanization activity. For these regions, the ConvLSTM model predicted future urbanization by analyzing the temporal sequence of images. For more stable regions, the XGBoost regressor predicted urban growth based on tabular metrics derived from the images.
-
-The results demonstrated that our pipeline effectively captured the dynamics of urban growth, achieving high prediction accuracy. The XGCLM model outperformed traditional methods, particularly in areas with high urbanization rates, highlighting the pipeline's robustness and versatility in handling large-scale satellite imagery for predictive modeling tasks. This case study underscores the potential of our integrated data extraction and preprocessing pipeline to facilitate advanced land cover analytics and support sustainable urban planning initiatives.
-
+To validate our pipeline, we applied it to predict urbanization trends in a rapidly developing region. We partitioned the area into a grid and extracted annual composite images from 2016 to 2022 using the Dynamic World dataset. These images were processed to reduce noise and fill gaps, providing clean data for analysis. Our hybrid model, combining XGBoost and ConvLSTM (XGCLM), classified regions by urbanization activity and predicted future growth. The pipeline demonstrated high prediction accuracy, particularly in rapidly urbanizing areas, underscoring its effectiveness for large-scale land cover analysis and supporting sustainable urban planning.
 
 ## 🚀 Getting Started
 
