@@ -18,7 +18,8 @@ The pipeline is designed to handle the significant volume and potential noise in
 
 6. Integration with Machine Learning Models: The processed data, including images and tabular metrics, are seamlessly integrated into machine learning models. This allows for efficient analysis and prediction of land cover changes, such as urbanization.
 
-[http://url/to/img.png](https://github.com/victor-radermecker/AdvancedLandCoverAnalytics-Pipeline/blob/main/img/batching.jpg))
+![alt text](https://github.com/victor-radermecker/AdvancedLandCoverAnalytics-Pipeline/blob/main/img/batching.jp?raw=true)
+
 
 
 ### Case Study: Urbanization Prediction Using Dynamic World Data
